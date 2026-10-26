@@ -84,7 +84,7 @@ export function CrmSummary({
       <div className="crm-charts-grid">
         <article className="detail-card crm-card">
           <div className="crm-card-header">
-            <h3>Embudo por estado</h3>
+            <h2>Embudo por estado</h2>
           </div>
           {loading ? (
             <div className="empty-column">Cargando…</div>
@@ -105,7 +105,7 @@ export function CrmSummary({
 
         <article className="detail-card crm-card">
           <div className="crm-card-header">
-            <h3>Distribución por estado</h3>
+            <h2>Distribución por estado</h2>
           </div>
           {loading ? (
             <div className="empty-column">Cargando…</div>
@@ -124,7 +124,7 @@ export function CrmSummary({
       <div className="crm-charts-grid">
         <article className="detail-card crm-card crm-outcome-card">
           <div className="crm-card-header">
-            <h3>Resultado de negociaciones</h3>
+            <h2>Resultado de negociaciones</h2>
           </div>
           <div className="crm-outcome">
             {loading ? (
@@ -139,7 +139,10 @@ export function CrmSummary({
               </div>
               <div>
                 <dt>Valor ganado</dt>
-                <dd style={{ color: STAGE_COLORS.won.bar }}>{formatPrice(wonValue)}</dd>
+                <dd>
+                  <span className="sr-only">Ganado: </span>
+                  {formatPrice(wonValue)}
+                </dd>
               </div>
             </dl>
           </div>
@@ -147,7 +150,7 @@ export function CrmSummary({
 
         <article className="detail-card crm-card crm-recent-card">
           <div className="crm-card-header">
-            <h3>Últimas oportunidades</h3>
+            <h2>Últimas oportunidades</h2>
             <Link href="/?vista=oportunidades" className="back-link">
               Ver todas →
             </Link>

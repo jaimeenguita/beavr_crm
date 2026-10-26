@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent, type PointerEvent as ReactPointerEvent } from "react";
 import { FormField } from "@/components/FormField";
 import { CloseButton, Modal, formatDate } from "@/components/Modal";
+import { StaffNameLink } from "@/components/rrhh/StaffNameLink";
 import type { Admision, EstadoLaboral, StaffMember } from "@/lib/crm/rrhh";
 import { ESTADO_LABORAL_LABELS } from "@/lib/crm/rrhh";
 
@@ -408,11 +409,112 @@ export function HireAdmisionDialog({
   );
 }
 
+export function DeleteConfirmDialog({
+  titleId = "rrhh-delete-title",
+  label,
+  heading,
+  detail,
+  confirmLabel,
+  deleting,
+  onConfirm,
+  onClose,
+}: {
+  titleId?: string;
+  label?: string;
+  heading: string;
+  detail?: string;
+  confirmLabel: string;
+  deleting: boolean;
+  onConfirm: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <Modal titleId={titleId} onClose={() => !deleting && onClose()}>
+      <div className="modal-header">
+        <div>
+          <div className="detail-label">{label ?? "Eliminar"}</div>
+          <h3 id={titleId}>{heading}</h3>
+        </div>
+        <CloseButton label="Cancelar" onClick={() => !deleting && onClose()} />
+      </div>
+
+      <div className="modal-warning" role="alert">
+        Esta acción <strong>no se puede deshacer</strong>.
+      </div>
+
+      {detail ? <p className="modal-text">{detail}</p> : null}
+
+      <div className="modal-actions">
+        <button type="button" className="btn btn-ghost" onClick={onClose} disabled={deleting} autoFocus>
+          Cancelar
+        </button>
+        <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={deleting}>
+          {deleting ? "Eliminando..." : confirmLabel}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+/** Toolbar de borrado tipo galería: Entrar → Cancelar / Eliminar seleccionados */
+export function SectionDeleteActions({
+  selectMode,
+  selectedCount,
+  disabled,
+  canEnter = true,
+  onEnterSelect,
+  onCancel,
+  onRequestDelete,
+  enterLabel = "Eliminar seleccionados",
+}: {
+  selectMode: boolean;
+  selectedCount: number;
+  disabled?: boolean;
+  canEnter?: boolean;
+  onEnterSelect: () => void;
+  onCancel: () => void;
+  onRequestDelete: () => void;
+  enterLabel?: string;
+}) {
+  if (selectMode) {
+    return (
+      <>
+        <button type="button" className="btn btn-ghost" onClick={onCancel} disabled={disabled}>
+          Cancelar
+        </button>
+        <button
+          type="button"
+          className="btn btn-danger"
+          onClick={onRequestDelete}
+          disabled={disabled || selectedCount === 0}
+        >
+          {selectedCount > 0 ? `Eliminar seleccionados (${selectedCount})` : "Eliminar seleccionados"}
+        </button>
+      </>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      className="btn btn-danger-soft"
+      onClick={onEnterSelect}
+      disabled={disabled || !canEnter}
+    >
+      {enterLabel}
+    </button>
+  );
+}
+
 export function VacacionDialog({
+  personaId,
+  personaNombre,
   saving,
   onSave,
   onClose,
 }: {
+  personaId?: string;
+  personaNombre?: string;
   saving: boolean;
   onSave: (values: { fecha_inicio: string; fecha_fin: string; motivo: string }) => void;
   onClose: () => void;
@@ -446,8 +548,23 @@ export function VacacionDialog({
     <Modal titleId="vacacion-dialog-title" onClose={onClose}>
       <div className="modal-header">
         <div>
-          <div className="detail-label">Vacaciones</div>
-          <h3 id="vacacion-dialog-title">Solicitar vacaciones</h3>
+          <div className="detail-label">
+            {personaNombre ? (
+              <>
+                Vacaciones ·{" "}
+                {personaId ? (
+                  <StaffNameLink id={personaId}>{personaNombre}</StaffNameLink>
+                ) : (
+                  personaNombre
+                )}
+              </>
+            ) : (
+              "Vacaciones"
+            )}
+          </div>
+          <h2 id="vacacion-dialog-title">
+            {personaNombre ? "Añadir vacaciones" : "Solicitar vacaciones"}
+          </h2>
         </div>
         <CloseButton label="Cerrar" onClick={onClose} />
       </div>
@@ -477,15 +594,25 @@ export function VacacionDialog({
           </FormField>
         </div>
         <FormField id="vac-motivo" label="Motivo" help="Opcional.">
-          <textarea id="vac-motivo" rows={3} value={motivo} onChange={(e) => setMotivo(e.target.value)} />
+          <textarea
+            id="vac-motivo"
+            rows={3}
+            value={motivo}
+            onChange={(e) => setMotivo(e.target.value)}
+            placeholder="Ej.: Vacaciones de verano…"
+          />
         </FormField>
-        {error ? <p className="form-error">{error}</p> : null}
+        {error ? (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        ) : null}
         <div className="modal-actions">
           <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>
             Cancelar
           </button>
           <button type="submit" className="btn btn-primary" disabled={saving}>
-            {saving ? "Enviando..." : "Solicitar"}
+            {saving ? "Guardando…" : personaNombre ? "Guardar vacaciones" : "Solicitar"}
           </button>
         </div>
       </form>
@@ -658,6 +785,398 @@ export function NominaUploadDialog({
           </button>
           <button type="submit" className="btn btn-primary" disabled={saving}>
             {saving ? "Subiendo..." : "Subir nómina"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+const SIGN_CANVAS_W = 560;
+const SIGN_CANVAS_H = 200;
+
+export function NominaSignDialog({
+  periodo,
+  saving,
+  onConfirm,
+  onClose,
+}: {
+  periodo: string;
+  saving: boolean;
+  onConfirm: (signaturePng: Blob) => void;
+  onClose: () => void;
+}) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const drawingRef = useRef(false);
+  const hasInkRef = useRef(false);
+  const [hasInk, setHasInk] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#1a2332";
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }, []);
+
+  const pointerPos = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    return {
+      x: (event.clientX - rect.left) * scaleX,
+      y: (event.clientY - rect.top) * scaleY,
+    };
+  };
+
+  const startDraw = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (saving) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    event.preventDefault();
+    canvas.setPointerCapture(event.pointerId);
+    drawingRef.current = true;
+    const { x, y } = pointerPos(event);
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+  };
+
+  const draw = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!drawingRef.current || saving) return;
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx) return;
+    event.preventDefault();
+    const { x, y } = pointerPos(event);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    if (!hasInkRef.current) {
+      hasInkRef.current = true;
+      setHasInk(true);
+      setError(null);
+    }
+  };
+
+  const endDraw = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    if (!drawingRef.current) return;
+    drawingRef.current = false;
+    try {
+      canvasRef.current?.releasePointerCapture(event.pointerId);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const clearCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (!canvas || !ctx) return;
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.strokeStyle = "#1a2332";
+    ctx.lineWidth = 2.4;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    hasInkRef.current = false;
+    setHasInk(false);
+    setError(null);
+  };
+
+  const handleConfirm = () => {
+    if (!hasInkRef.current) {
+      setError("Dibuja tu firma en el recuadro antes de confirmar.");
+      return;
+    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          setError("No se ha podido generar la imagen de la firma.");
+          return;
+        }
+        onConfirm(blob);
+      },
+      "image/png",
+    );
+  };
+
+  return (
+    <Modal titleId="nomina-sign-title" onClose={onClose}>
+      <div className="modal-header">
+        <div>
+          <div className="detail-label">Nómina · {periodo}</div>
+          <h3 id="nomina-sign-title">Firmar nómina</h3>
+        </div>
+        <CloseButton label="Cerrar" onClick={onClose} />
+      </div>
+      <p className="modal-text">
+        Dibuja tu firma en el recuadro. Se incrustará en el apartado «Firma del trabajador» del PDF.
+      </p>
+      <div className="form-field">
+        <label htmlFor="nomina-sign-canvas">Firma manuscrita</label>
+        <canvas
+          id="nomina-sign-canvas"
+          ref={canvasRef}
+          className="nomina-sign-canvas"
+          width={SIGN_CANVAS_W}
+          height={SIGN_CANVAS_H}
+          onPointerDown={startDraw}
+          onPointerMove={draw}
+          onPointerUp={endDraw}
+          onPointerCancel={endDraw}
+          onPointerLeave={endDraw}
+          aria-describedby="nomina-sign-help"
+        />
+        <p id="nomina-sign-help" className="form-help">
+          Usa el ratón o el dedo para firmar. Puedes borrar y volver a empezar.
+        </p>
+      </div>
+      {error ? <p className="form-error" role="alert">{error}</p> : null}
+      <div className="modal-actions nomina-sign-actions">
+        <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>
+          Cancelar
+        </button>
+        <button type="button" className="btn btn-soft" onClick={clearCanvas} disabled={saving || !hasInk}>
+          Limpiar
+        </button>
+        <button type="button" className="btn btn-primary" onClick={handleConfirm} disabled={saving}>
+          {saving ? "Firmando..." : "Confirmar firma"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+function toDatetimeLocalValue(date = new Date()) {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+function fromDatetimeLocalValue(value: string) {
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+export type FichajeFormValues = {
+  entrada_en: string;
+  salida_en: string | null;
+  notas: string;
+};
+
+/** Alta manual de fichaje (RRHH · lista de fichajes). */
+export function FichajeDialog({
+  personaId,
+  personaNombre,
+  saving,
+  onSave,
+  onClose,
+}: {
+  personaId?: string;
+  personaNombre: string;
+  saving: boolean;
+  onSave: (values: FichajeFormValues) => void;
+  onClose: () => void;
+}) {
+  const [entrada, setEntrada] = useState(toDatetimeLocalValue());
+  const [salida, setSalida] = useState("");
+  const [notas, setNotas] = useState("");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    const entradaDate = fromDatetimeLocalValue(entrada);
+    if (!entradaDate) {
+      setError("Indica una fecha y hora de entrada válidas.");
+      return;
+    }
+    let salidaIso: string | null = null;
+    if (salida) {
+      const salidaDate = fromDatetimeLocalValue(salida);
+      if (!salidaDate) {
+        setError("La fecha y hora de salida no son válidas.");
+        return;
+      }
+      if (salidaDate.getTime() < entradaDate.getTime()) {
+        setError("La salida no puede ser anterior a la entrada.");
+        return;
+      }
+      salidaIso = salidaDate.toISOString();
+    }
+    onSave({
+      entrada_en: entradaDate.toISOString(),
+      salida_en: salidaIso,
+      notas: notas.trim(),
+    });
+  };
+
+  return (
+    <Modal titleId="fichaje-dialog-title" onClose={onClose}>
+      <div className="modal-header">
+        <div>
+          <div className="detail-label">
+            Fichaje ·{" "}
+            {personaId ? <StaffNameLink id={personaId}>{personaNombre}</StaffNameLink> : personaNombre}
+          </div>
+          <h2 id="fichaje-dialog-title">Añadir fichaje</h2>
+        </div>
+        <CloseButton label="Cerrar" onClick={onClose} />
+      </div>
+      <form className="company-form" onSubmit={handleSubmit}>
+        <FormField id="fichaje-entrada" label="Entrada" required help="Fecha y hora de inicio de la jornada.">
+          <input
+            id="fichaje-entrada"
+            type="datetime-local"
+            value={entrada}
+            onChange={(event) => {
+              setEntrada(event.target.value);
+              setError(null);
+            }}
+            required
+          />
+        </FormField>
+        <FormField
+          id="fichaje-salida"
+          label="Salida"
+          help="Déjalo vacío si la jornada sigue en curso."
+        >
+          <input
+            id="fichaje-salida"
+            type="datetime-local"
+            value={salida}
+            min={entrada || undefined}
+            onChange={(event) => {
+              setSalida(event.target.value);
+              setError(null);
+            }}
+          />
+        </FormField>
+        <FormField id="fichaje-notas" label="Notas" help="Opcional.">
+          <textarea
+            id="fichaje-notas"
+            rows={3}
+            value={notas}
+            onChange={(event) => setNotas(event.target.value)}
+            placeholder="Ej.: Teletrabajo, visita a cliente…"
+          />
+        </FormField>
+        {error ? (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <div className="modal-actions">
+          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>
+            Cancelar
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>
+            {saving ? "Guardando…" : "Guardar fichaje"}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** Cerrar un fichaje en curso indicando fecha/hora de salida. */
+export function TerminarFichajeDialog({
+  personaId,
+  personaNombre,
+  entradaEn,
+  saving,
+  onSave,
+  onClose,
+}: {
+  personaId?: string;
+  personaNombre: string;
+  entradaEn: string;
+  saving: boolean;
+  onSave: (salidaEn: string) => void;
+  onClose: () => void;
+}) {
+  const entradaDate = new Date(entradaEn);
+  const defaultSalida = (() => {
+    const now = new Date();
+    if (!Number.isNaN(entradaDate.getTime()) && now.getTime() < entradaDate.getTime()) {
+      return toDatetimeLocalValue(entradaDate);
+    }
+    return toDatetimeLocalValue(now);
+  })();
+  const [salida, setSalida] = useState(defaultSalida);
+  const [error, setError] = useState<string | null>(null);
+  const entradaMin = Number.isNaN(entradaDate.getTime()) ? undefined : toDatetimeLocalValue(entradaDate);
+
+  const handleSubmit = (event: FormEvent) => {
+    event.preventDefault();
+    const salidaDate = fromDatetimeLocalValue(salida);
+    if (!salidaDate) {
+      setError("Indica una fecha y hora de salida válidas.");
+      return;
+    }
+    if (!Number.isNaN(entradaDate.getTime()) && salidaDate.getTime() < entradaDate.getTime()) {
+      setError("La salida no puede ser anterior a la entrada.");
+      return;
+    }
+    onSave(salidaDate.toISOString());
+  };
+
+  return (
+    <Modal titleId="terminar-fichaje-title" onClose={onClose}>
+      <div className="modal-header">
+        <div>
+          <div className="detail-label">
+            Fichaje ·{" "}
+            {personaId ? <StaffNameLink id={personaId}>{personaNombre}</StaffNameLink> : personaNombre}
+          </div>
+          <h2 id="terminar-fichaje-title">Terminar fichaje</h2>
+        </div>
+        <CloseButton label="Cerrar" onClick={onClose} />
+      </div>
+      <form className="company-form" onSubmit={handleSubmit}>
+        <p className="modal-text">
+          Este fichaje está en curso desde{" "}
+          <strong>
+            {Number.isNaN(entradaDate.getTime())
+              ? entradaEn
+              : entradaDate.toLocaleString("es-ES", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                })}
+          </strong>
+          . Indica cuándo finaliza la jornada.
+        </p>
+        <FormField id="terminar-fichaje-salida" label="Salida" required>
+          <input
+            id="terminar-fichaje-salida"
+            type="datetime-local"
+            value={salida}
+            min={entradaMin}
+            onChange={(event) => {
+              setSalida(event.target.value);
+              setError(null);
+            }}
+            required
+          />
+        </FormField>
+        {error ? (
+          <p className="form-error" role="alert">
+            {error}
+          </p>
+        ) : null}
+        <div className="modal-actions">
+          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={saving}>
+            Cancelar
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={saving}>
+            {saving ? "Guardando…" : "Terminar fichaje"}
           </button>
         </div>
       </form>

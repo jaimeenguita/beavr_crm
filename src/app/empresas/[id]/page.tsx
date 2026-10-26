@@ -298,7 +298,7 @@ export default function CompanyDetailPage() {
           </div>
         )}
 
-        <section className="entity-hero" aria-label="Datos de la empresa">
+        <section className="entity-hero" aria-label="Datos del cliente">
           <EntityLogo name={company.nombre} size="lg" logoUrl={company.logo_url} />
           <div className="entity-hero-copy">
             <h2>{company.nombre}</h2>

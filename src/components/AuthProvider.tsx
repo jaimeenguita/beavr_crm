@@ -116,8 +116,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/logo-mark.png" alt="beavr" className="auth-logo-mark" />
             <div>
-              <h1>beavr CRM</h1>
-              <p>Acceso del equipo</p>
+              <h1>beavr ERP</h1>
+              <p>Acceso del equipo · CRM y RRHH</p>
             </div>
           </div>
 

@@ -297,8 +297,8 @@ export default function OpportunityDetailPage() {
           </article>
 
           <article className="detail-card" aria-label="Cambiar estado">
-            <h3>Estado de la negociación</h3>
-            <div className="detail-status-list" style={{ marginTop: 12 }}>
+            <h2>Estado de la negociación</h2>
+            <div className="detail-status-list" style={{ marginTop: 12 }} role="group" aria-label="Cambiar estado">
               {STAGE_ORDER.map((stage) => (
                 <button
                   key={stage}
@@ -313,6 +313,7 @@ export default function OpportunityDetailPage() {
                         }
                       : undefined
                   }
+                  aria-pressed={opportunity.estado === stage}
                   onClick={() => handleStatusChange(stage)}
                   disabled={saving}
                 >

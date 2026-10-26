@@ -157,7 +157,7 @@ export function CompanyEditor({
       <form className="company-form" onSubmit={handleSubmit} noValidate>
         <FormField
           id="company-logo"
-          label="Logo de la empresa"
+          label="Logo del cliente"
           error={errors.logo}
           help={
             errors.logo
@@ -346,7 +346,7 @@ export function DeleteCompanyDialog({
     <Modal titleId="company-delete-title" onClose={onClose}>
       <div className="modal-header">
         <div>
-          <div className="detail-label">Eliminar empresa</div>
+          <div className="detail-label">Eliminar cliente</div>
           <h3 id="company-delete-title">¿Eliminar «{company.nombre}»?</h3>
         </div>
         <CloseButton label="Cancelar" onClick={onClose} />

@@ -9,7 +9,9 @@ import { DashboardShell } from "@/components/DashboardShell";
 import { EmployeeEditor, type Employee, type EmployeeFormValues } from "@/components/EmployeeDialogs";
 import { EntityLogo } from "@/components/EntityLogo";
 import { ProcessStrip } from "@/components/ProcessStrip";
+import { FichajesPanel, type FichajeRow } from "@/components/rrhh/FichajesPanel";
 import { RrhhPanel } from "@/components/rrhh/RrhhPanel";
+import { VacacionesPanel, type VacacionRow } from "@/components/rrhh/VacacionesPanel";
 import { uploadCompanyLogo } from "@/lib/crm/companyLogo";
 import {
   mapCompanyRow,
@@ -19,7 +21,13 @@ import {
   type MappedOpportunity,
 } from "@/lib/crm/mapRows";
 import { formatPrice } from "@/lib/crm/money";
-import { mapAdmisionRow, type Admision, type StaffMember } from "@/lib/crm/rrhh";
+import {
+  mapAdmisionRow,
+  type Admision,
+  type Fichaje,
+  type StaffMember,
+  type Vacacion,
+} from "@/lib/crm/rrhh";
 import {
   STAGE_COLORS,
   STAGE_LABELS,
@@ -59,9 +67,17 @@ function formatRelative(dateIso: string) {
   return date.toLocaleDateString("es-ES", { day: "2-digit", month: "short" });
 }
 
-function resolveView(
-  vista: string | null,
-): "summary" | "opportunities" | "people" | "companies" | "rrhh" {
+type HomeView =
+  | "summary"
+  | "opportunities"
+  | "people"
+  | "companies"
+  | "rrhh"
+  | "rrhh_admisiones"
+  | "rrhh_fichajes"
+  | "rrhh_vacaciones";
+
+function resolveView(vista: string | null): HomeView {
   switch (vista) {
     case "oportunidades":
       return "opportunities";
@@ -72,7 +88,14 @@ function resolveView(
     case "clientes":
       return "companies";
     case "rrhh":
+    case "plantilla":
       return "rrhh";
+    case "admisiones":
+      return "rrhh_admisiones";
+    case "fichajes":
+      return "rrhh_fichajes";
+    case "vacaciones":
+      return "rrhh_vacaciones";
     default:
       return "summary";
   }
@@ -136,6 +159,8 @@ function HomeContent() {
   const [employeeRecords, setEmployeeRecords] = useState<Employee[]>([]);
   const [staffRecords, setStaffRecords] = useState<StaffMember[]>([]);
   const [admisionRecords, setAdmisionRecords] = useState<Admision[]>([]);
+  const [fichajeRecords, setFichajeRecords] = useState<FichajeRow[]>([]);
+  const [vacacionRecords, setVacacionRecords] = useState<VacacionRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -152,11 +177,20 @@ function HomeContent() {
   const fetchData = async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!silent) setLoading(true);
 
-    const [companiesResult, peopleResult, opportunitiesResult, admisionesResult] = await Promise.all([
+    const [
+      companiesResult,
+      peopleResult,
+      opportunitiesResult,
+      admisionesResult,
+      fichajesResult,
+      vacacionesResult,
+    ] = await Promise.all([
       supabase.from("empresas").select("*").order("created_at", { ascending: true }),
       supabase.from("personas").select("*").order("created_at", { ascending: true }),
       supabase.from("oportunidades").select("*").order("creado_en", { ascending: false }),
       supabase.from("rrhh_admisiones").select("*").order("created_at", { ascending: false }),
+      supabase.from("rrhh_fichajes").select("*").order("entrada_en", { ascending: false }),
+      supabase.from("rrhh_vacaciones").select("*").order("fecha_inicio", { ascending: false }),
     ]);
 
     if (opportunitiesResult.error) {
@@ -165,6 +199,8 @@ function HomeContent() {
       setEmployeeRecords([]);
       setStaffRecords([]);
       setAdmisionRecords([]);
+      setFichajeRecords([]);
+      setVacacionRecords([]);
       if (!silent) setLoading(false);
       return;
     }
@@ -187,11 +223,43 @@ function HomeContent() {
         ];
       }),
     );
+    const staffNameById = new Map(
+      people
+        .filter((person) => Boolean(person.es_interno))
+        .map((person) => [
+          String(person.id),
+          {
+            nombre: String(person.nombre ?? "Sin nombre"),
+            cargo: (person.cargo as string | null) ?? null,
+          },
+        ]),
+    );
 
+    const staffMapped = mapInternalStaff(people);
     setEmpresaRecords(companies.map(mapCompanyRow));
     setEmployeeRecords(mapExternalContacts(people));
-    setStaffRecords(mapInternalStaff(people));
+    setStaffRecords(staffMapped);
     setAdmisionRecords((admisionesResult.data ?? []).map((row) => mapAdmisionRow(row as Record<string, unknown>)));
+    setFichajeRecords(
+      ((fichajesResult.data ?? []) as Fichaje[]).map((row) => {
+        const person = staffNameById.get(row.persona_id);
+        return {
+          ...row,
+          persona_nombre: person?.nombre ?? "Trabajador",
+          persona_cargo: person?.cargo ?? null,
+        };
+      }),
+    );
+    setVacacionRecords(
+      ((vacacionesResult.data ?? []) as Vacacion[]).map((row) => {
+        const person = staffNameById.get(row.persona_id);
+        return {
+          ...row,
+          persona_nombre: person?.nombre ?? "Trabajador",
+          persona_cargo: person?.cargo ?? null,
+        };
+      }),
+    );
     setOpportunities(
       ((opportunitiesResult.data ?? []) as Record<string, unknown>[]).map((row) =>
         mapOpportunityRow(row, personById, companyById),
@@ -424,7 +492,10 @@ function HomeContent() {
     opportunities: { title: "Oportunidades", subtitle: "Pipeline comercial · del lead a la venta" },
     people: { title: "Contactos", subtitle: "Personas de contacto en clientes" },
     companies: { title: "Clientes", subtitle: "Empresas y cuentas de la cartera" },
-    rrhh: { title: "Plantilla", subtitle: "Equipo interno, admisiones y fichas RRHH" },
+    rrhh: { title: "Plantilla", subtitle: "Equipo interno · fichas RRHH" },
+    rrhh_admisiones: { title: "Admisiones", subtitle: "Procesos de selección y contratación" },
+    rrhh_fichajes: { title: "Fichajes", subtitle: "Entradas y salidas del equipo · filtrable" },
+    rrhh_vacaciones: { title: "Vacaciones", subtitle: "Solicitudes del equipo · filtrable" },
   } as const;
 
   const navCounts = {
@@ -433,6 +504,9 @@ function HomeContent() {
     people: employeeRecords.length,
     companies: empresaRecords.length,
     rrhh: staffRecords.length,
+    rrhh_admisiones: admisionRecords.filter((item) => item.estado === "en_proceso").length,
+    rrhh_fichajes: fichajeRecords.filter((item) => !item.salida_en).length,
+    rrhh_vacaciones: vacacionRecords.filter((item) => item.estado === "pendiente").length,
   };
 
   return (
@@ -475,20 +549,23 @@ function HomeContent() {
 
           <section className="crm-toolbar" aria-label="Herramientas del tablero">
             <div className="crm-toolbar-left">
-              <div className="search-box">
-                <span className="search-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="11" cy="11" r="5.5" stroke="currentColor" strokeWidth="1.8" />
-                    <path d="M16.2 16.2L20 20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(event) => setSearchTerm(event.target.value)}
-                  placeholder="Buscar proyecto, persona o empresa..."
-                  aria-label="Buscar oportunidad"
-                />
+              <div className="search-field">
+                <label htmlFor="search-oportunidades">Buscar oportunidad</label>
+                <div className="search-box">
+                  <span className="search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="11" cy="11" r="5.5" stroke="currentColor" strokeWidth="1.8" />
+                      <path d="M16.2 16.2L20 20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <input
+                    id="search-oportunidades"
+                    type="search"
+                    value={searchTerm}
+                    onChange={(event) => setSearchTerm(event.target.value)}
+                    placeholder="Ej.: App de reservas, Ana García…"
+                  />
+                </div>
               </div>
             </div>
           </section>
@@ -502,7 +579,7 @@ function HomeContent() {
                 onDrop={() => handleDrop(column.key)}
               >
                 <div className="board-header">
-                  <h3>{column.label}</h3>
+                  <h2>{column.label}</h2>
                   <span>{grouped[column.key]?.length ?? 0}</span>
                 </div>
                 <span className="board-column-value">{formatPrice(stageValues[column.key]) ?? "—"}</span>
@@ -551,8 +628,37 @@ function HomeContent() {
 
       {activeView === "rrhh" && (
         <RrhhPanel
+          section="plantilla"
           staff={staffRecords}
           admisiones={admisionRecords}
+          loading={loading}
+          onRefresh={() => fetchData({ silent: true })}
+        />
+      )}
+
+      {activeView === "rrhh_admisiones" && (
+        <RrhhPanel
+          section="admisiones"
+          staff={staffRecords}
+          admisiones={admisionRecords}
+          loading={loading}
+          onRefresh={() => fetchData({ silent: true })}
+        />
+      )}
+
+      {activeView === "rrhh_fichajes" && (
+        <FichajesPanel
+          fichajes={fichajeRecords}
+          staff={staffRecords}
+          loading={loading}
+          onRefresh={() => fetchData({ silent: true })}
+        />
+      )}
+
+      {activeView === "rrhh_vacaciones" && (
+        <VacacionesPanel
+          vacaciones={vacacionRecords}
+          staff={staffRecords}
           loading={loading}
           onRefresh={() => fetchData({ silent: true })}
         />
@@ -564,20 +670,23 @@ function HomeContent() {
 
           <div className="crm-toolbar">
             <div className="crm-toolbar-left">
-              <div className="directory-search-box search-box">
-                <span className="search-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="11" cy="11" r="5.5" stroke="currentColor" strokeWidth="1.8" />
-                    <path d="M16.2 16.2L20 20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  value={employeesSearch}
-                  onChange={(event) => setEmployeesSearch(event.target.value)}
-                  placeholder="Buscar contacto, cargo, correo o cliente..."
-                  aria-label="Buscar contactos"
-                />
+              <div className="search-field">
+                <label htmlFor="search-contactos">Buscar contactos</label>
+                <div className="directory-search-box search-box">
+                  <span className="search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="11" cy="11" r="5.5" stroke="currentColor" strokeWidth="1.8" />
+                      <path d="M16.2 16.2L20 20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <input
+                    id="search-contactos"
+                    type="search"
+                    value={employeesSearch}
+                    onChange={(event) => setEmployeesSearch(event.target.value)}
+                    placeholder="Ej.: Ana García, compras…"
+                  />
+                </div>
               </div>
               <SortControls
                 value={employeesSort}
@@ -597,11 +706,11 @@ function HomeContent() {
             <table className="crm-table">
               <thead>
                 <tr>
-                  <th>Contacto</th>
-                  <th>Cliente</th>
-                  <th>Cargo</th>
-                  <th>Email</th>
-                  <th>Teléfono</th>
+                  <th scope="col">Contacto</th>
+                  <th scope="col">Cliente</th>
+                  <th scope="col">Cargo</th>
+                  <th scope="col">Email</th>
+                  <th scope="col">Teléfono</th>
                 </tr>
               </thead>
               <tbody>
@@ -663,20 +772,23 @@ function HomeContent() {
 
           <div className="crm-toolbar">
             <div className="crm-toolbar-left">
-              <div className="directory-search-box search-box">
-                <span className="search-icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="11" cy="11" r="5.5" stroke="currentColor" strokeWidth="1.8" />
-                    <path d="M16.2 16.2L20 20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
-                  </svg>
-                </span>
-                <input
-                  type="text"
-                  value={companiesSearch}
-                  onChange={(event) => setCompaniesSearch(event.target.value)}
-                  placeholder="Buscar cliente, NIF, sector o contacto..."
-                  aria-label="Buscar clientes"
-                />
+              <div className="search-field">
+                <label htmlFor="search-clientes">Buscar clientes</label>
+                <div className="directory-search-box search-box">
+                  <span className="search-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <circle cx="11" cy="11" r="5.5" stroke="currentColor" strokeWidth="1.8" />
+                      <path d="M16.2 16.2L20 20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <input
+                    id="search-clientes"
+                    type="search"
+                    value={companiesSearch}
+                    onChange={(event) => setCompaniesSearch(event.target.value)}
+                    placeholder="Ej.: Talleres Pérez, hostelería…"
+                  />
+                </div>
               </div>
               <SortControls value={companiesSort} onChange={setCompaniesSort} label="Orden de clientes" />
             </div>
@@ -691,11 +803,11 @@ function HomeContent() {
             <table className="crm-table">
               <thead>
                 <tr>
-                  <th>Cliente</th>
-                  <th>Sector</th>
-                  <th>NIF</th>
-                  <th>Contactos</th>
-                  <th>Sitio web</th>
+                  <th scope="col">Cliente</th>
+                  <th scope="col">Sector</th>
+                  <th scope="col">NIF</th>
+                  <th scope="col">Contactos</th>
+                  <th scope="col">Sitio web</th>
                 </tr>
               </thead>
               <tbody>

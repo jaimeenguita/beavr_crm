@@ -61,3 +61,29 @@ export async function uploadCv(supabase: SupabaseClient, admisionId: string, fil
 export async function uploadNominaPdf(supabase: SupabaseClient, personaId: string, file: File) {
   return uploadRrhhFile(supabase, `nominas/${personaId}`, file, PDF_EXTENSIONS);
 }
+
+export async function uploadSignedNominaPdf(
+  supabase: SupabaseClient,
+  personaId: string,
+  pdfBytes: Uint8Array,
+  originalName: string | null,
+) {
+  const base = (originalName || "nomina.pdf").replace(/\.pdf$/i, "");
+  const file = new File([new Uint8Array(pdfBytes)], `${base}-firmada.pdf`, {
+    type: "application/pdf",
+  });
+  return uploadNominaPdf(supabase, personaId, file);
+}
+
+function storagePathFromUrl(url: string) {
+  const marker = `/storage/v1/object/public/${RRHH_BUCKET}/`;
+  const index = url.indexOf(marker);
+  return index === -1 ? null : decodeURIComponent(url.slice(index + marker.length));
+}
+
+/** Borra un archivo del bucket RRHH si la URL pertenece a ese bucket. */
+export async function deleteRrhhFile(supabase: SupabaseClient, url: string | null | undefined) {
+  const path = url ? storagePathFromUrl(url) : null;
+  if (!path) return;
+  await supabase.storage.from(RRHH_BUCKET).remove([path]);
+}

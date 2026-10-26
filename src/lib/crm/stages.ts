@@ -1,9 +1,10 @@
 export type Stage = "new" | "contacted" | "proposal" | "won" | "lost";
 
+/** Etiquetas del pipeline CRM (lenguaje del usuario; skill erp). */
 export const STAGE_LABELS: Record<Stage, string> = {
   new: "Nueva",
-  contacted: "Propuesta",
-  proposal: "Negociación",
+  contacted: "Contactada",
+  proposal: "Propuesta",
   won: "Ganada",
   lost: "Perdida",
 };

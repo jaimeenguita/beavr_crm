@@ -6,7 +6,16 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { useTheme } from "@/components/ThemeProvider";
 
-export type NavKey = "summary" | "opportunities" | "people" | "companies" | "rrhh";
+/** Claves de navegación ERP: CRM + subsecciones RRHH (skill erp). */
+export type NavKey =
+  | "summary"
+  | "opportunities"
+  | "people"
+  | "companies"
+  | "rrhh"
+  | "rrhh_admisiones"
+  | "rrhh_fichajes"
+  | "rrhh_vacaciones";
 
 const SIDEBAR_KEY = "beavr-crm-sidebar-collapsed";
 
@@ -30,17 +39,6 @@ const CRM_NAV: NavItem[] = [
         <path d="M8 15v-4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
         <path d="M12 15V8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
         <path d="M16 15v-6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  {
-    key: "opportunities",
-    label: "Oportunidades",
-    href: "/?vista=oportunidades",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <rect x="4" y="5" width="6" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
-        <rect x="14" y="5" width="6" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
       </svg>
     ),
   },
@@ -77,6 +75,17 @@ const CRM_NAV: NavItem[] = [
       </svg>
     ),
   },
+  {
+    key: "opportunities",
+    label: "Oportunidades",
+    href: "/?vista=oportunidades",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="4" y="5" width="6" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+        <rect x="14" y="5" width="6" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    ),
+  },
 ];
 
 const RRHH_NAV: NavItem[] = [
@@ -103,6 +112,41 @@ const RRHH_NAV: NavItem[] = [
       </svg>
     ),
   },
+  {
+    key: "rrhh_admisiones",
+    label: "Admisiones",
+    href: "/?vista=admisiones",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M8 7h11v13H8V7Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+        <path d="M5 10V4h11" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M11 11h5M11 14h5M11 17h3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  {
+    key: "rrhh_fichajes",
+    label: "Fichajes",
+    href: "/?vista=fichajes",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M12 8v4.5l3 1.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
+  {
+    key: "rrhh_vacaciones",
+    label: "Vacaciones",
+    href: "/?vista=vacaciones",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="15" rx="2" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M4 10h16M8 3v4M16 3v4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path d="M8 14h2M12 14h2M16 14h2M8 17h2M12 17h2" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+      </svg>
+    ),
+  },
 ];
 
 function resolveActive(pathname: string, vista: string | null): NavKey {
@@ -121,7 +165,14 @@ function resolveActive(pathname: string, vista: string | null): NavKey {
     case "clientes":
       return "companies";
     case "rrhh":
+    case "plantilla":
       return "rrhh";
+    case "admisiones":
+      return "rrhh_admisiones";
+    case "fichajes":
+      return "rrhh_fichajes";
+    case "vacaciones":
+      return "rrhh_vacaciones";
     default:
       return "summary";
   }
@@ -275,8 +326,8 @@ function DashboardShellInner({
 }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const [ready, setReady] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setReady(true);
@@ -295,14 +346,17 @@ function DashboardShellInner({
 
   return (
     <div className={`dashboard-shell ${collapsed ? "sidebar-collapsed" : ""}`}>
+      <a href="#contenido" className="skip-link">
+        Saltar al contenido
+      </a>
       <aside className="sidebar" aria-label="Menú del ERP">
         <div className="sidebar-top">
           <div className="brand-wrap">
             <Link href="/" aria-label="Ir al resumen" className="brand-link">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-full.png" alt="beavr" className="brand-logo brand-logo-full" />
+              <img src="/logo-full.png" alt="" className="brand-logo brand-logo-full" />
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/logo-mark.png" alt="beavr" className="brand-logo brand-logo-mark" />
+              <img src="/logo-mark.png" alt="" className="brand-logo brand-logo-mark" />
             </Link>
           </div>
 
@@ -343,7 +397,9 @@ function DashboardShellInner({
           </div>
           <HeaderControls />
         </header>
-        <main className="main-panel">{children}</main>
+        <main id="contenido" className="main-panel" tabIndex={-1}>
+          {children}
+        </main>
       </div>
     </div>
   );
@@ -359,8 +415,11 @@ export function DashboardShell(props: {
     <Suspense
       fallback={
         <div className="dashboard-shell">
+          <a href="#contenido" className="skip-link">
+            Saltar al contenido
+          </a>
           <div className="workspace">
-            <main className="main-panel">
+            <main id="contenido" className="main-panel" tabIndex={-1}>
               <div className="empty-column">Cargando…</div>
             </main>
           </div>
