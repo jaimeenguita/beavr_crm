@@ -6,7 +6,7 @@ Project rules for Claude / Cursor. Keep this file under ~200 lines. Update when 
 
 ## Qué es
 
-CRM **beavr** (Salesianos SGE+DDI): oportunidades, empresas, contactos/empleados y módulo RRHH (plantilla, fichajes, vacaciones, nóminas). Lo usan comerciales y personal interno. App Next.js en esta carpeta; la landing vive en `../beavr-landing`.
+CRM **beavr** (Salesianos SGE+DDI): oportunidades, empresas, contactos/empleados, módulo RRHH (plantilla, fichajes, vacaciones, nóminas) y módulo Ventas y facturación (`/?vista=ventas`, pestañas Ventas, Facturas y Agente IA). Lo usan comerciales y personal interno. App Next.js en esta carpeta; la landing vive en `../beavr-landing`.
 
 ## Datos
 
@@ -25,13 +25,17 @@ CRM **beavr** (Salesianos SGE+DDI): oportunidades, empresas, contactos/empleados
 | Supabase JS | 2.x |
 | Chart.js / react-chartjs-2 | dashboards |
 | pdf-lib | PDFs (p. ej. nóminas) |
+| AI SDK (`ai`, `@ai-sdk/react`) + OpenRouter | agente IA: chat (`useChat`) y lectura de facturas desde foto |
+| Vitest | dev: tests de dominio y de migraciones |
+| PGlite | dev: Postgres en memoria para probar migraciones |
 
 ## Mapa
 
 ```
-src/app/           # rutas: /, empresas, empleados, oportunidades, rrhh, api/leads
-src/components/    # UI CRM + rrhh/ + FormField, Modal, DashboardShell
-src/lib/crm/       # dominio y formato
+src/app/           # rutas: /, empresas, empleados, oportunidades, rrhh, api/leads, api/agente (chat, factura-foto)
+src/components/    # UI CRM + rrhh/ + ventas/ (Ventas y facturación) + FormField, Modal, DashboardShell
+src/lib/crm/       # dominio y formato (incl. facturas.ts)
+src/lib/agente/    # agente IA: modelo y auth (server.ts), herramientas (tools.ts), vista del chat (chat.ts)
 src/lib/supabase/  # clientes Supabase
 supabase/          # SQL / migraciones del proyecto
 ```
@@ -44,9 +48,10 @@ npm run dev          # Next dev → http://localhost:3000
 npm run lint         # eslint
 npm run build        # producción; evitar con `dev` ya en marcha
 npm run start        # sirve el build
+npm test             # vitest: domain logic + migration on PGlite
 ```
 
-No hay script `typecheck` ni `test` en `package.json` hoy. Si se añaden, documentarlos aquí.
+No hay script `typecheck` en `package.json`; para comprobar tipos usar `npx tsc --noEmit`. Si se añade, documentarlo aquí.
 
 ## Convenciones
 
@@ -69,6 +74,8 @@ Nombres (nunca valores en este fichero):
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` o `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `OPENROUTER_API_KEY` (solo servidor; la añade el usuario, los agentes no la leen ni la escriben)
+- `OPENROUTER_MODEL` (opcional; por defecto el modelo de `src/lib/agente/server.ts`)
 
 Copiar/ajustar en `.env.local` (gitignored).
 

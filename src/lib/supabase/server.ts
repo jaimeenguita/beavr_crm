@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 
-export function createSupabaseServerClient() {
+// With an access token, the client acts as that user (RLS applies as in the browser).
+export function createSupabaseServerClient(accessToken?: string) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key =
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
@@ -15,5 +16,6 @@ export function createSupabaseServerClient() {
       persistSession: false,
       autoRefreshToken: false,
     },
+    global: { headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {} },
   });
 }

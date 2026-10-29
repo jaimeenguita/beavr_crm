@@ -1,0 +1,496 @@
+<title>beavr Ventas e IA</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: prototype picker on top, one full CRM frame per prototype (copied beavr tokens). */
+:root {
+  --mist: #f4f4f5; --paper: #fafafa; --surface: #ffffff; --fg: #111111; --soft: #3f3f46;
+  --muted: #52525b; --line: #e4e4e7; --accent: #111111; --inverse: #ffffff;
+  --sidebar-bg: #111111; --sidebar-fg: #fafafa; --sidebar-muted: #d4d4d8;
+  --sidebar-hover: rgba(255,255,255,.07); --sidebar-active-bg: #ffffff; --sidebar-active-fg: #111111;
+  --success-bg: #dcfce7; --success-fg: #166534; --success-border: #bbf7d0;
+  --danger-bg: #fee2e2; --danger-fg: #991b1b; --danger-border: #fecaca;
+  --warn-bg: #ffedd5; --warn-fg: #9a3412; --warn-border: #fed7aa;
+  --info: #3b82f6; --violet: #8b5cf6; --orange: #f97316; --green: #22c55e; --red: #ef4444;
+  --row-hover: rgba(0,0,0,.025);
+  --font: "Plus Jakarta Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --mist: #161616; --paper: #161616; --surface: #1a1a1a; --fg: #f9fbff; --soft: #d4d4d8;
+  --muted: #a1a1aa; --line: #2a2a2a; --accent: #f9fbff; --inverse: #111111;
+  --sidebar-bg: #0f0f0f; --sidebar-fg: #f9fbff; --sidebar-muted: #d4d4d8;
+  --sidebar-hover: rgba(255,255,255,.06); --sidebar-active-bg: #2a2a2a; --sidebar-active-fg: #f9fbff;
+  --success-bg: rgba(22,163,74,.16); --success-fg: #86efac; --success-border: rgba(22,163,74,.35);
+  --danger-bg: rgba(220,38,38,.16); --danger-fg: #fca5a5; --danger-border: rgba(220,38,38,.35);
+  --warn-bg: rgba(249,115,22,.16); --warn-fg: #fdba74; --warn-border: rgba(249,115,22,.35);
+  --row-hover: rgba(255,255,255,.03); color-scheme: dark;
+} }
+:root[data-theme="dark"] {
+  --mist: #161616; --paper: #161616; --surface: #1a1a1a; --fg: #f9fbff; --soft: #d4d4d8;
+  --muted: #a1a1aa; --line: #2a2a2a; --accent: #f9fbff; --inverse: #111111;
+  --sidebar-bg: #0f0f0f; --sidebar-fg: #f9fbff; --sidebar-muted: #d4d4d8;
+  --sidebar-hover: rgba(255,255,255,.06); --sidebar-active-bg: #2a2a2a; --sidebar-active-fg: #f9fbff;
+  --success-bg: rgba(22,163,74,.16); --success-fg: #86efac; --success-border: rgba(22,163,74,.35);
+  --danger-bg: rgba(220,38,38,.16); --danger-fg: #fca5a5; --danger-border: rgba(220,38,38,.35);
+  --warn-bg: rgba(249,115,22,.16); --warn-fg: #fdba74; --warn-border: rgba(249,115,22,.35);
+  --row-hover: rgba(255,255,255,.03); color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--mist); color: var(--fg); font-family: var(--font); font-size: 14px; -webkit-font-smoothing: antialiased; }
+button { font: inherit; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.page { max-width: 1320px; margin: 0 auto; padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; gap: 18px; }
+.intro h1 { margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -.02em; text-wrap: balance; }
+.intro p { margin: 6px 0 0; color: var(--muted); max-width: 70ch; line-height: 1.55; }
+.picker { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 9px 14px; min-height: 40px; font-size: 12.5px; font-weight: 550; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; }
+.chip:hover { color: var(--fg); }
+.chip.active { background: var(--fg); border-color: var(--fg); color: var(--inverse); }
+.chip .n { font-variant-numeric: tabular-nums; opacity: .6; }
+.proto-head { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 16px; align-items: end; }
+.proto-head h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+.proto-head p { margin: 4px 0 0; color: var(--muted); line-height: 1.5; max-width: 80ch; }
+.proto-nav { display: flex; gap: 8px; }
+.notes { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 10px; }
+.notes div { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; font-size: 13px; line-height: 1.5; color: var(--soft); }
+.notes strong { display: block; font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 4px; }
+.frame-scroll { overflow-x: auto; border-radius: 14px; border: 1px solid var(--line); background: var(--mist); }
+
+/* ---- CRM frame (mirrors globals.css) ---- */
+.app { display: grid; grid-template-columns: 210px minmax(0,1fr); min-width: 1040px; min-height: 720px; background: var(--mist); }
+.sb { background: var(--sidebar-bg); color: var(--sidebar-fg); padding: 14px 10px; display: flex; flex-direction: column; gap: 12px; }
+.sb-brand { font-weight: 700; font-size: 19px; letter-spacing: -.04em; padding: 4px 10px 6px; }
+.sb-label { padding: 4px 12px 0; font-size: 11px; font-weight: 500; color: var(--sidebar-muted); letter-spacing: .04em; text-transform: uppercase; }
+.sb-nav { display: flex; flex-direction: column; gap: 2px; }
+.nav { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 8px; font-size: 13px; font-weight: 500; color: var(--sidebar-muted); }
+.nav svg { width: 17px; height: 17px; flex-shrink: 0; }
+.nav.sub { padding-left: 37px; font-size: 12.5px; }
+.nav.active { background: var(--sidebar-active-bg); color: var(--sidebar-active-fg); }
+.nav .cnt { margin-left: auto; font-size: 11px; opacity: .55; font-variant-numeric: tabular-nums; }
+.nav .dot { margin-left: auto; width: 7px; height: 7px; border-radius: 9px; background: var(--red); }
+.ws { display: flex; flex-direction: column; min-width: 0; }
+.ws-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 22px; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--mist) 88%, var(--surface)); }
+.ws-head h3 { margin: 0; font-size: 16px; font-weight: 550; letter-spacing: -.01em; }
+.ws-head p { margin: 2px 0 0; color: var(--muted); font-size: 12.5px; }
+.ws-body { padding: 18px 22px 28px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.row-l { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.tab { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 999px; padding: 8px 14px; font-size: 12px; font-weight: 550; display: inline-flex; gap: 6px; align-items: center; }
+.tab.active { background: var(--fg); border-color: var(--fg); color: var(--inverse); }
+.seg { display: inline-flex; border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 3px; gap: 2px; }
+.seg span { padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 550; color: var(--muted); }
+.seg span.active { background: var(--fg); color: var(--inverse); }
+.btn { border: 1px solid var(--line); background: var(--surface); color: var(--fg); padding: 8px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 550; display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--inverse); }
+.btn-sm { padding: 5px 11px; font-size: 12px; }
+.search { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 0 14px; min-height: 38px; color: var(--muted); font-size: 12.5px; min-width: 240px; }
+.kpis { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.kpis.k3 { grid-template-columns: repeat(3, minmax(0,1fr)); }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 13px 15px; display: flex; flex-direction: column; gap: 3px; }
+.kpi .l { font-size: 11px; color: var(--muted); font-weight: 500; }
+.kpi strong { font-size: 23px; font-weight: 600; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+.kpi small { color: var(--muted); font-size: 11.5px; }
+.kpi.bad strong { color: var(--danger-fg); }
+.kpi.good strong { color: var(--success-fg); }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; min-width: 0; display: flex; flex-direction: column; }
+.card-h { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.card-h h4 { margin: 0; font-size: 13.5px; font-weight: 550; }
+.card-h span { font-size: 11.5px; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: minmax(0,1.5fr) minmax(0,1fr); gap: 14px; }
+.grid2e { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 14px; }
+.tw { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); overflow: auto; }
+table { width: 100%; border-collapse: collapse; }
+th, td { padding: 0 13px; height: 42px; text-align: left; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th { height: 36px; font-size: 11.5px; font-weight: 450; color: var(--muted); }
+td { font-size: 13px; }
+tr:last-child td { border-bottom: 0; }
+tbody tr:hover { background: var(--row-hover); }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+td.mono { font-variant-numeric: tabular-nums; color: var(--muted); font-size: 12.5px; }
+tr.sel { background: color-mix(in srgb, var(--fg) 5%, transparent); }
+.st { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border-radius: 999px; font-size: 11.5px; font-weight: 600; border: 1px solid var(--line); background: var(--mist); color: var(--muted); }
+.st::before { content: ""; width: 6px; height: 6px; border-radius: 9px; background: currentColor; }
+.st.ok { background: var(--success-bg); color: var(--success-fg); border-color: var(--success-border); }
+.st.bad { background: var(--danger-bg); color: var(--danger-fg); border-color: var(--danger-border); }
+.st.warn { background: var(--warn-bg); color: var(--warn-fg); border-color: var(--warn-border); }
+.ai-tag { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+.ai-tag svg { width: 13px; height: 13px; }
+.insight { display: grid; grid-template-columns: 4px minmax(0,1fr); gap: 12px; padding: 11px 12px; border-radius: 10px; background: var(--mist); }
+.insight .bar { border-radius: 4px; }
+.insight p { margin: 0; font-size: 13px; line-height: 1.45; }
+.insight small { display: block; color: var(--muted); font-size: 11.5px; margin-top: 3px; }
+.insight .acts { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.chart svg { width: 100%; height: auto; display: block; }
+.chart text { fill: var(--muted); font-size: 10px; font-family: var(--font); }
+.legend { display: flex; gap: 14px; font-size: 11.5px; color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+.legend i { display: inline-block; width: 9px; height: 9px; border-radius: 9px; margin-right: 6px; vertical-align: -1px; }
+/* chat */
+.chat { display: flex; flex-direction: column; gap: 12px; }
+.msg { max-width: 82%; padding: 10px 13px; border-radius: 12px; font-size: 13px; line-height: 1.5; }
+.msg.u { align-self: flex-end; background: var(--fg); color: var(--inverse); border-bottom-right-radius: 4px; }
+.msg.a { align-self: flex-start; background: var(--surface); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.msg.a .ai-tag { margin-bottom: 5px; }
+.msg ul { margin: 6px 0 0; padding-left: 18px; }
+.composer { display: flex; gap: 8px; align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 5px 5px 5px 16px; color: var(--muted); font-size: 13px; }
+.composer span { flex: 1; }
+.sugg { display: flex; flex-wrap: wrap; gap: 6px; }
+.sugg span { border: 1px dashed var(--line); border-radius: 999px; padding: 5px 11px; font-size: 12px; color: var(--soft); background: var(--surface); }
+.mini-t { width: 100%; margin-top: 8px; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.mini-t td, .mini-t th { height: 32px; font-size: 12px; }
+/* docked panel */
+.split { display: grid; grid-template-columns: minmax(0,1fr) 330px; min-height: 100%; flex: 1; }
+.dock { border-left: 1px solid var(--line); background: var(--paper); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.dock-h { display: flex; justify-content: space-between; align-items: center; }
+.dock-h h4 { margin: 0; font-size: 13.5px; font-weight: 600; }
+.grow { flex: 1; }
+/* master-detail */
+.md { display: grid; grid-template-columns: 340px minmax(0,1fr); gap: 14px; }
+.inv-item { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 2px 10px; padding: 11px 12px; border-radius: 10px; border: 1px solid transparent; }
+.inv-item.active { border-color: var(--line); background: var(--surface); box-shadow: 0 1px 2px rgba(0,0,0,.04); }
+.inv-item b { font-size: 13px; font-weight: 600; }
+.inv-item span { font-size: 12px; color: var(--muted); }
+.inv-item .amt { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-size: 13px; }
+.facts { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 10px; }
+.facts div { display: flex; flex-direction: column; gap: 2px; }
+.facts span { font-size: 11px; color: var(--muted); }
+.facts b { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.lines td { height: 36px; }
+.totals { display: grid; grid-template-columns: auto auto; justify-content: end; gap: 4px 28px; font-size: 13px; padding-top: 10px; font-variant-numeric: tabular-nums; }
+.totals .t { font-weight: 700; font-size: 15px; }
+/* kanban */
+.board { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: 12px; }
+.col { background: color-mix(in srgb, var(--mist) 60%, var(--surface)); border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+.col-h { display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 6px; font-size: 12.5px; font-weight: 600; }
+.col-h span { font-weight: 500; color: var(--muted); font-variant-numeric: tabular-nums; }
+.col-h i { display: inline-block; width: 8px; height: 8px; border-radius: 9px; margin-right: 7px; }
+.kc { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px; display: flex; flex-direction: column; gap: 4px; }
+.kc b { font-size: 12.5px; font-weight: 600; }
+.kc span { font-size: 11.5px; color: var(--muted); }
+.kc .r { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.kc .r strong { font-size: 13px; font-variant-numeric: tabular-nums; }
+.kc .hint { margin-top: 4px; font-size: 11.5px; color: var(--soft); background: var(--mist); border-radius: 7px; padding: 6px 8px; line-height: 1.4; }
+/* feed */
+.feed { display: flex; flex-direction: column; }
+.fi { display: grid; grid-template-columns: 74px 22px minmax(0,1fr); gap: 0 12px; }
+.fi time { font-size: 11.5px; color: var(--muted); padding-top: 14px; text-align: right; font-variant-numeric: tabular-nums; }
+.fi .rail { display: flex; flex-direction: column; align-items: center; }
+.fi .rail i { width: 11px; height: 11px; border-radius: 9px; margin-top: 16px; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.fi .rail u { flex: 1; width: 1px; background: var(--line); }
+.fi .body { padding: 10px 0 14px; }
+.fi .card { padding: 13px 15px; }
+.fi h5 { margin: 0 0 4px; font-size: 13.5px; font-weight: 600; }
+.fi p { margin: 0; font-size: 13px; color: var(--soft); line-height: 1.5; }
+.sec-h { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .04em; text-transform: uppercase; margin: 4px 0 -4px; }
+.anchor-nav { display: flex; gap: 18px; border-bottom: 1px solid var(--line); padding: 0 22px; background: var(--surface); }
+.anchor-nav span { padding: 11px 0; font-size: 12.5px; font-weight: 550; color: var(--muted); border-bottom: 2px solid transparent; }
+.anchor-nav span.active { color: var(--fg); border-color: var(--fg); }
+.prog { height: 6px; border-radius: 6px; background: var(--mist); overflow: hidden; }
+.prog i { display: block; height: 100%; background: var(--fg); border-radius: 6px; }
+.bigq { font-size: 21px; font-weight: 600; letter-spacing: -.02em; text-align: center; margin: 18px 0 4px; }
+@media (max-width: 760px) {
+  .proto-head { grid-template-columns: 1fr; }
+  .notes { grid-template-columns: 1fr; }
+}
+</style>
+
+<div class="page">
+  <header class="intro">
+    <h1>Ventas, facturación y agente IA</h1>
+    <p>Ocho propuestas para el nuevo apartado del CRM beavr, con los mismos colores, tipografía, botones y tablas que ya usa la app. Los datos son de ejemplo. Elige una (o una mezcla) y empiezo a programarla.</p>
+  </header>
+  <nav class="picker" id="picker" aria-label="Prototipos"></nav>
+  <section class="proto-head">
+    <div><h2 id="p-title"></h2><p id="p-desc"></p></div>
+    <div class="proto-nav">
+      <button class="chip" id="prev" type="button">Anterior</button>
+      <button class="chip" id="next" type="button">Siguiente</button>
+    </div>
+  </section>
+  <div class="frame-scroll"><div id="frame"></div></div>
+  <div class="notes"><div><strong>A favor</strong><span id="p-pro"></span></div><div><strong>En contra</strong><span id="p-con"></span></div></div>
+</div>
+
+<script>
+const I = {
+  sum: '<path d="M4 19V5M4 19h16M8 15v-4M12 15V8M16 15v-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+  co: '<path d="M4 20V7.5L12 4l8 3.5V20" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 20v-5h6v5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>',
+  pe: '<circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7"/><path d="M5.5 19c1.2-3 3.4-4.5 6.5-4.5S17.8 16 19 19" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+  op: '<rect x="4" y="5" width="6" height="14" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="5" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.7"/>',
+  sales: '<path d="M4 17l5-5 4 3 7-8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 7h5v5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
+  inv: '<path d="M6 3h9l3 3v15H6V3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 10h6M9 13h6M9 16h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+  ai: '<path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M18 15l.8 2.2L21 18l-2.2.8L18 21l-.8-2.2L15 18l2.2-.8L18 15Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>',
+  mod: '<rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 10h16M10 10v10" stroke="currentColor" stroke-width="1.7"/>',
+  st: '<path d="M8 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" stroke="currentColor" stroke-width="1.7"/><path d="M3.5 19c.9-2.8 2.8-4.2 5.5-4.2s4.6 1.4 5.5 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+  clk: '<circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/><path d="M12 8v4.5l3 1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+};
+const svg = (k) => `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">${I[k]}</svg>`;
+
+// Example data
+const months = ["Ene","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep","Oct"];
+const sales = [38,42,51,47,55,61,44,39,58,64];
+const billed = [36,40,49,45,52,60,43,37,55,52];
+const invoices = [
+  { n:"F-2026-0149", c:"Nortia Logística SL", d:"27/10/2026", due:"—", base:5200, st:"Borrador" },
+  { n:"F-2026-0148", c:"Nortia Logística SL", d:"12/10/2026", due:"11/11/2026", base:8400, st:"Pendiente" },
+  { n:"F-2026-0147", c:"Grupo Alba Retail", d:"08/10/2026", due:"07/11/2026", base:4250, st:"Pagada" },
+  { n:"F-2026-0146", c:"Talleres Mendoza", d:"02/10/2026", due:"01/11/2026", base:2980, st:"Pendiente" },
+  { n:"F-2026-0141", c:"Clínica Vega", d:"15/09/2026", due:"15/10/2026", base:6100, st:"Vencida" },
+  { n:"F-2026-0139", c:"Iberfrío SA", d:"09/09/2026", due:"09/10/2026", base:3300, st:"Vencida" },
+  { n:"F-2026-0138", c:"Estudio Kora", d:"05/09/2026", due:"05/10/2026", base:1850, st:"Pagada" },
+];
+const salesRows = [
+  { n:"V-0236", c:"Nortia Logística SL", who:"Lucía Romero", d:"24/10/2026", amt:5200, inv:"Borrador" },
+  { n:"V-0234", c:"Grupo Alba Retail", who:"Marcos Gil", d:"06/10/2026", amt:4250, inv:"Facturada" },
+  { n:"V-0233", c:"Talleres Mendoza", who:"Lucía Romero", d:"30/09/2026", amt:2980, inv:"Facturada" },
+  { n:"V-0231", c:"Iberfrío SA", who:"Marcos Gil", d:"30/09/2026", amt:4200, inv:"Sin facturar" },
+  { n:"V-0229", c:"Clínica Vega", who:"Ana Prieto", d:"12/09/2026", amt:6100, inv:"Facturada" },
+  { n:"V-0227", c:"Estudio Kora", who:"Ana Prieto", d:"02/09/2026", amt:1850, inv:"Facturada" },
+];
+const eur = (v, dec) => v.toLocaleString("es-ES", { minimumFractionDigits: dec ? 2 : 0, maximumFractionDigits: dec ? 2 : 0 }) + " €";
+const total = (b) => Math.round(b * 1.21 * 100) / 100;
+const stCls = { Pagada:"ok", Facturada:"ok", Vencida:"bad", "Sin facturar":"warn", Pendiente:"", Borrador:"" };
+const pill = (s) => `<span class="st ${stCls[s] || ""}">${s}</span>`;
+const aiTag = (t = "Agente IA") => `<span class="ai-tag">${svg("ai")}${t}</span>`;
+
+// Shared AI findings (same facts in every prototype)
+const findings = [
+  { c:"var(--red)", t:"2 facturas vencidas suman 11.374,00 €.", s:"Iberfrío SA lleva 19 días de retraso y Clínica Vega 13.", a:["Preparar recordatorio","Ver facturas"] },
+  { c:"var(--orange)", t:"La venta V-0231 de Iberfrío SA (4.200 €) se cerró el 30/09 y no tiene factura.", s:"Es el mismo cliente que ya tiene una factura vencida.", a:["Crear factura"] },
+  { c:"var(--green)", t:"Octubre lleva 64.000 € vendidos, un 10,3 % más que septiembre.", s:"Previsión para noviembre: entre 59.000 y 66.000 €.", a:["Ver tendencia"] },
+  { c:"var(--info)", t:"Nortia Logística SL acumula 13.600 € entre una factura pendiente y un borrador.", s:"Es el cliente con más importe abierto. Conviene emitir el borrador antes de fin de mes.", a:["Ver cliente"] },
+];
+const insight = (f, compact) => `<div class="insight"><span class="bar" style="background:${f.c}"></span><div><p>${f.t}</p><small>${f.s}</small>${compact ? "" : `<div class="acts">${f.a.map((a,i)=>`<span class="btn btn-sm ${i===0?"btn-primary":""}">${a}</span>`).join("")}</div>`}</div></div>`;
+
+// Charts drawn with one linear scale (0-70 k€)
+function barChart(w = 560, h = 190) {
+  const pad = { l: 34, r: 8, t: 10, b: 22 }, max = 70, iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+  const y = (v) => pad.t + ih - (v / max) * ih, bw = iw / months.length;
+  let g = "";
+  for (let v = 0; v <= max; v += 20) g += `<line x1="${pad.l}" x2="${w-pad.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${pad.l-6}" y="${y(v)+3}" text-anchor="end">${v}k</text>`;
+  months.forEach((m, i) => {
+    const x = pad.l + i * bw + bw * 0.18, bwi = bw * 0.3;
+    g += `<rect x="${x}" y="${y(sales[i])}" width="${bwi}" height="${y(0)-y(sales[i])}" rx="2" fill="var(--fg)"/>`;
+    g += `<rect x="${x+bwi+2}" y="${y(billed[i])}" width="${bwi}" height="${y(0)-y(billed[i])}" rx="2" fill="var(--muted)" opacity=".45"/>`;
+    g += `<text x="${pad.l + i*bw + bw/2}" y="${h-6}" text-anchor="middle">${m}</text>`;
+  });
+  return `<div class="chart"><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Ventas y facturado por mes">${g}</svg><div class="legend"><span><i style="background:var(--fg)"></i>Vendido</span><span><i style="background:var(--muted);opacity:.45"></i>Facturado</span></div></div>`;
+}
+function lineChart(w = 560, h = 170) {
+  const pad = { l: 34, r: 12, t: 10, b: 22 }, max = 70, iw = w - pad.l - pad.r, ih = h - pad.t - pad.b;
+  const all = [...sales, 62.5], n = all.length;
+  const x = (i) => pad.l + (i / (n - 1)) * iw, y = (v) => pad.t + ih - (v / max) * ih;
+  let g = "";
+  for (let v = 0; v <= max; v += 20) g += `<line x1="${pad.l}" x2="${w-pad.r}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)"/><text x="${pad.l-6}" y="${y(v)+3}" text-anchor="end">${v}k</text>`;
+  const pts = sales.map((v, i) => `${x(i)},${y(v)}`).join(" ");
+  g += `<polygon points="${x(0)},${y(0)} ${pts} ${x(9)},${y(0)}" fill="var(--fg)" opacity=".06"/>`;
+  g += `<polygon points="${x(9)},${y(64)} ${x(10)},${y(66)} ${x(10)},${y(59)}" fill="var(--info)" opacity=".18"/>`;
+  g += `<polyline points="${pts}" fill="none" stroke="var(--fg)" stroke-width="2"/>`;
+  g += `<line x1="${x(9)}" y1="${y(64)}" x2="${x(10)}" y2="${y(62.5)}" stroke="var(--info)" stroke-width="2" stroke-dasharray="4 4"/>`;
+  g += `<circle cx="${x(9)}" cy="${y(64)}" r="4" fill="var(--fg)"/><circle cx="${x(10)}" cy="${y(62.5)}" r="4" fill="var(--info)"/>`;
+  [...months, "Nov"].forEach((m, i) => g += `<text x="${x(i)}" y="${h-6}" text-anchor="middle">${m}</text>`);
+  return `<div class="chart"><svg viewBox="0 0 ${w} ${h}" role="img" aria-label="Ventas mensuales y previsión de noviembre">${g}</svg><div class="legend"><span><i style="background:var(--fg)"></i>Vendido</span><span><i style="background:var(--info)"></i>Previsión del agente</span></div></div>`;
+}
+
+// Shell
+const crmNav = [["sum","Resumen"],["co","Clientes"],["pe","Contactos"],["op","Oportunidades"]];
+const rrhhNav = [["st","Plantilla"],["clk","Fichajes"]];
+function shell({ active, section, title, sub, actions = "", body, raw }) {
+  const nav = (items) => items.map(([ic, l, extra = "", cls = ""]) => `<div class="nav ${cls} ${active === l ? "active" : ""}">${ic ? svg(ic) : ""}<span>${l}</span>${extra}</div>`).join("");
+  return `<div class="app"><aside class="sb"><div class="sb-brand">beavr</div>
+    <div class="sb-label">CRM</div><div class="sb-nav">${nav(crmNav)}</div>
+    <div class="sb-label">Ventas</div><div class="sb-nav">${nav(section)}</div>
+    <div class="sb-label">RRHH</div><div class="sb-nav">${nav(rrhhNav)}</div></aside>
+    <div class="ws"><div class="ws-head"><div><h3>${title}</h3><p>${sub}</p></div><div class="row-l">${actions}</div></div>
+    ${raw ? body : `<div class="ws-body">${body}</div>`}</div></div>`;
+}
+const oneNav = [["sales","Ventas y facturación",'<span class="dot" title="2 avisos"></span>']];
+const kpiRow = (k3) => `<div class="kpis ${k3 ? "k3" : ""}">
+  <div class="kpi"><span class="l">Vendido en octubre</span><strong>64.000 €</strong><small>+10,3 % frente a septiembre</small></div>
+  <div class="kpi"><span class="l">Pendiente de cobro</span><strong>25.143,80 €</strong><small>4 facturas</small></div>
+  <div class="kpi bad"><span class="l">Vencido</span><strong>11.374,00 €</strong><small>2 facturas</small></div>
+  ${k3 ? "" : `<div class="kpi"><span class="l">Sin facturar</span><strong>4.200 €</strong><small>1 venta cerrada</small></div>`}</div>`;
+function invTable(rows = invoices, opts = {}) {
+  return `<div class="tw"><table><thead><tr><th>Nº factura</th><th>Cliente</th><th>Emisión</th><th>Vencimiento</th><th class="num">Base</th><th class="num">Total (IVA 21 %)</th><th>Estado</th>${opts.ai ? "<th>Agente</th>" : ""}</tr></thead><tbody>
+  ${rows.map((r) => `<tr class="${opts.sel === r.n ? "sel" : ""}"><td class="mono">${r.n}</td><td>${r.c}</td><td class="mono">${r.d}</td><td class="mono">${r.due}</td><td class="num">${eur(r.base, 1)}</td><td class="num"><b>${eur(total(r.base), 1)}</b></td><td>${pill(r.st)}</td>${opts.ai ? `<td style="font-size:12px;color:var(--muted)">${r.st === "Vencida" ? "Reclamar hoy" : r.st === "Borrador" ? "Revisar importe" : r.st === "Pendiente" ? "Sin riesgo" : "—"}</td>` : ""}</tr>`).join("")}
+  </tbody></table></div>`;
+}
+function salesTable() {
+  return `<div class="tw"><table><thead><tr><th>Venta</th><th>Cliente</th><th>Comercial</th><th>Cierre</th><th class="num">Importe</th><th>Factura</th></tr></thead><tbody>
+  ${salesRows.map((r) => `<tr><td class="mono">${r.n}</td><td>${r.c}</td><td>${r.who}</td><td class="mono">${r.d}</td><td class="num"><b>${eur(r.amt)}</b></td><td>${pill(r.inv)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+const searchBox = (t) => `<div class="search"><svg viewBox="0 0 24 24" width="15" height="15" fill="none"><circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.7"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>${t}</div>`;
+const tabs = (list, act) => `<div class="row-l">${list.map((t) => `<span class="tab ${t === act ? "active" : ""}">${t === "Agente IA" ? svg("ai").replace('aria-hidden', 'width="14" height="14" aria-hidden') : ""}${t}</span>`).join("")}</div>`;
+const composer = (t = "Pregunta sobre ventas o facturas…") => `<div class="composer"><span>${t}</span><span class="btn btn-primary btn-sm" style="flex:0">Preguntar</span></div>`;
+
+const P = [];
+
+// 1. Tabs inside one section
+P.push({
+  name: "Pestañas",
+  desc: "Un único apartado en el menú lateral y tres pestañas arriba: Ventas, Facturas y Agente IA. Es el mismo patrón de chips que ya usan los filtros de RRHH. Aquí se ve la pestaña Facturas.",
+  pro: "Es lo más fácil de entender y de programar. Encaja con cómo funcionan las vistas de la app (?vista=ventas&tab=facturas). Cada pestaña tiene su lista completa.",
+  con: "El agente queda escondido en su propia pestaña: si no entras, no ves sus avisos.",
+  html: () => shell({ active: "Ventas y facturación", section: oneNav, title: "Ventas y facturación", sub: "Octubre 2026 · 7 facturas emitidas este trimestre",
+    actions: `<span class="btn">Exportar</span><span class="btn btn-primary">Nueva factura</span>`,
+    body: `<div class="row">${tabs(["Ventas","Facturas","Agente IA"], "Facturas")}${searchBox("Buscar por cliente o número")}</div>
+      ${kpiRow()}
+      <div class="row-l">${["Todas","Borrador","Pendiente","Vencida","Pagada"].map((t,i)=>`<span class="tab ${i===0?"active":""}">${t}</span>`).join("")}</div>
+      ${invTable()}` }),
+});
+
+// 2. Sidebar sub-sections
+P.push({
+  name: "Submenú lateral",
+  desc: "La sección Ventas aparece en el menú lateral con tres entradas propias, igual que RRHH tiene Plantilla, Admisiones, Fichajes y Vacaciones. Aquí se ve la vista Agente IA como panel de análisis.",
+  pro: "Sigue exactamente la jerarquía ERP del proyecto (módulo → vistas en el menú). Cada vista tiene URL propia y contadores en el menú.",
+  con: "Ocupa tres huecos en el menú. Para ver una factura y lo que dice el agente de ella hay que cambiar de vista.",
+  html: () => shell({ active: "Agente IA", section: [["sales","Ventas",'<span class="cnt">6</span>'],["inv","Facturas",'<span class="cnt">7</span>'],["ai","Agente IA",'<span class="dot"></span>']],
+    title: "Agente IA", sub: "Último análisis: hoy, 09:12 · revisa ventas y facturas cada mañana",
+    actions: `<span class="btn">Historial</span><span class="btn btn-primary">${svg("ai").replace('aria-hidden','width="14" height="14" aria-hidden')}Analizar ahora</span>`,
+    body: `${kpiRow()}
+      <div class="grid2"><div class="card"><div class="card-h"><h4>Ventas y previsión</h4><span>miles de euros</span></div>${lineChart()}</div>
+      <div class="card"><div class="card-h"><h4>Avisos del agente</h4><span>4 nuevos</span></div><div class="list">${findings.slice(0,3).map(f=>insight(f,true)).join("")}</div></div></div>
+      <div class="card"><div class="card-h"><h4>Pregúntale al agente</h4>${aiTag("Responde con tus datos")}</div>
+      <div class="sugg" style="margin-bottom:10px"><span>¿Qué clientes pagan tarde?</span><span>Compara este trimestre con el anterior</span><span>¿Qué ventas falta facturar?</span></div>${composer()}</div>` }),
+});
+
+// 3. Docked copilot
+P.push({
+  name: "Copiloto lateral",
+  desc: "Ventas y Facturas como pestañas, y el agente siempre abierto en un panel a la derecha. El agente lee lo que tienes en pantalla y responde sobre eso.",
+  pro: "El agente está presente en las tres vistas sin quitar espacio a la tabla. Es la forma más natural de \"trabajar con\" la IA.",
+  con: "Necesita pantallas anchas; en portátil pequeño el panel tendrá que poder plegarse. Más trabajo de programación.",
+  html: () => shell({ active: "Ventas y facturación", section: oneNav, title: "Ventas y facturación", sub: "Octubre 2026", raw: true,
+    actions: `<span class="btn btn-primary">Nueva venta</span>`,
+    body: `<div class="split"><div class="ws-body">
+      <div class="row">${tabs(["Ventas","Facturas"], "Ventas")}${searchBox("Buscar venta o cliente")}</div>
+      ${kpiRow(true)}
+      <div class="card"><div class="card-h"><h4>Vendido frente a facturado</h4><span>2026 · miles de euros</span></div>${barChart()}</div>
+      ${salesTable()}</div>
+      <aside class="dock"><div class="dock-h"><h4>Agente IA</h4><span class="btn btn-sm">Plegar</span></div>
+        <div class="chat grow">
+          <div class="msg a">${aiTag()}<div>Estoy viendo <b>Ventas de octubre</b>. Hay una venta cerrada sin factura: <b>V-0231</b> de Iberfrío SA por 4.200 €.</div><div class="acts" style="display:flex;gap:6px;margin-top:8px"><span class="btn btn-sm btn-primary">Crear factura</span></div></div>
+          <div class="msg u">¿Quién vende más este trimestre?</div>
+          <div class="msg a">${aiTag()}<div>Lucía Romero lleva 8.180 € en ventas cerradas, Ana Prieto 7.950 € y Marcos Gil 8.450 €. Marcos va primero, pero tiene la venta sin facturar.</div></div>
+        </div>
+        <div class="sugg"><span>Resume octubre</span><span>Riesgos de cobro</span></div>${composer("Pregunta al agente…")}</aside></div>` }),
+});
+
+// 4. Unified scrolling dashboard
+P.push({
+  name: "Panel único",
+  desc: "Una sola página que se recorre de arriba abajo con tres bloques anclados: Resumen del agente, Ventas y Facturas. La barra de anclas salta a cada bloque.",
+  pro: "Se ve todo de un vistazo, ideal para presentarlo en clase. Reutiliza el estilo de la página Resumen que ya existe.",
+  con: "Las tablas tienen que ir recortadas (últimos registros) y con un enlace a la lista completa. Página larga.",
+  html: () => shell({ active: "Ventas y facturación", section: oneNav, title: "Ventas y facturación", sub: "Octubre 2026", raw: true,
+    actions: `<span class="btn">Exportar informe</span><span class="btn btn-primary">Nueva factura</span>`,
+    body: `<div class="anchor-nav"><span class="active">Resumen del agente</span><span>Ventas</span><span>Facturas</span></div><div class="ws-body">
+      <div class="card"><div class="card-h"><h4>Lo que ha visto el agente esta semana</h4>${aiTag("Actualizado hoy 09:12")}</div>
+        <div class="grid2e">${findings.map(f=>insight(f)).join("")}</div></div>
+      <div class="sec-h">Ventas</div>
+      <div class="grid2"><div class="card"><div class="card-h"><h4>Vendido frente a facturado</h4><span>miles de euros</span></div>${barChart()}</div>${kpiRow(true).replace('class="kpis k3"','class="kpis" style="grid-template-columns:1fr;align-content:start"')}</div>
+      <div class="sec-h">Facturas recientes</div>${invTable(invoices.slice(0,4))}</div>` }),
+});
+
+// 5. Master-detail inbox
+P.push({
+  name: "Bandeja de facturas",
+  desc: "Lista de facturas a la izquierda y la factura abierta a la derecha, con el análisis del agente sobre esa factura concreta. Las pestañas cambian entre Ventas, Facturas y el análisis general.",
+  pro: "El agente explica cada factura (retraso, historial del cliente, venta relacionada). Muy práctico para el trabajo diario de cobros.",
+  con: "La vista de Ventas tendría que seguir el mismo esquema o se notará distinta. La lista lateral muestra menos columnas.",
+  html: () => { const f = invoices[4]; return shell({ active: "Ventas y facturación", section: oneNav, title: "Ventas y facturación", sub: "Facturas · 7 este trimestre",
+    actions: `<span class="btn btn-primary">Nueva factura</span>`,
+    body: `<div class="row">${tabs(["Ventas","Facturas","Agente IA"], "Facturas")}${searchBox("Buscar factura")}</div>
+      <div class="md"><div class="card" style="padding:8px"><div class="list" style="gap:2px">
+        ${invoices.map(r=>`<div class="inv-item ${r===f?"active":""}"><b>${r.c}</b><span class="amt">${eur(total(r.base),1)}</span><span>${r.n} · ${r.d}</span><span>${pill(r.st)}</span></div>`).join("")}</div></div>
+      <div class="card"><div class="card-h"><h4>${f.n} · ${f.c}</h4><div class="row-l"><span class="btn btn-sm">Descargar PDF</span><span class="btn btn-sm btn-primary">Marcar como pagada</span></div></div>
+        <div class="facts"><div><span>Emisión</span><b>${f.d}</b></div><div><span>Vencimiento</span><b>${f.due}</b></div><div><span>Estado</span><b>${pill(f.st)}</b></div><div><span>Venta</span><b>V-0229</b></div></div>
+        <div class="tw lines" style="margin-top:14px"><table><thead><tr><th>Concepto</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Importe</th></tr></thead><tbody>
+          <tr><td>Licencia CRM anual · 10 usuarios</td><td class="num">10</td><td class="num">420,00 €</td><td class="num">4.200,00 €</td></tr>
+          <tr><td>Implantación y formación</td><td class="num">1</td><td class="num">1.900,00 €</td><td class="num">1.900,00 €</td></tr></tbody></table></div>
+        <div class="totals"><span>Base imponible</span><span>6.100,00 €</span><span>IVA 21 %</span><span>1.281,00 €</span><span class="t">Total</span><span class="t">7.381,00 €</span></div>
+        <div style="margin-top:14px">${insight({ c:"var(--red)", t:"Vencida hace 13 días. Clínica Vega pagó sus 3 facturas anteriores con una media de 6 días de retraso.", s:"Lo normal es que pague esta semana. Recomiendo un recordatorio amable, no una reclamación.", a:["Preparar recordatorio","Ver historial del cliente"] })}</div>
+      </div></div>` }); },
+});
+
+// 6. Agent-first chat
+P.push({
+  name: "Agente primero",
+  desc: "La vista principal es una conversación con el agente. Responde con tablas, cifras y botones de acción. Ventas y Facturas quedan como pestañas para ver las listas completas.",
+  pro: "Es el prototipo que más destaca la parte de IA, que es lo nuevo de la tarea. Muy vistoso en una presentación.",
+  con: "Para el uso diario las listas son más rápidas que preguntar. Depende mucho de que el agente responda bien.",
+  html: () => shell({ active: "Ventas y facturación", section: oneNav, title: "Ventas y facturación", sub: "Agente IA · conectado a 6 ventas y 7 facturas",
+    actions: tabs(["Agente IA","Ventas","Facturas"], "Agente IA"),
+    body: `<div style="max-width:760px;width:100%;margin:0 auto;display:flex;flex-direction:column;gap:14px">
+      <div class="bigq">¿Qué quieres saber de tus ventas?</div>
+      <div class="sugg" style="justify-content:center"><span>¿Qué facturas debo reclamar?</span><span>Resume octubre</span><span>¿Qué ventas falta facturar?</span><span>Previsión de noviembre</span></div>
+      <div class="chat">
+        <div class="msg u">¿Qué facturas debo reclamar?</div>
+        <div class="msg a" style="max-width:100%">${aiTag()}<div>Tienes 2 facturas vencidas por <b>11.374,00 €</b>. Empezaría por Iberfrío SA: lleva más días y además tiene una venta sin facturar.</div>
+          <table class="mini-t"><thead><tr><th>Factura</th><th>Cliente</th><th class="num">Total</th><th class="num">Retraso</th></tr></thead><tbody>
+          <tr><td class="mono">F-2026-0139</td><td>Iberfrío SA</td><td class="num">3.993,00 €</td><td class="num">19 días</td></tr>
+          <tr><td class="mono">F-2026-0141</td><td>Clínica Vega</td><td class="num">7.381,00 €</td><td class="num">13 días</td></tr></tbody></table>
+          <div style="display:flex;gap:6px;margin-top:10px"><span class="btn btn-sm btn-primary">Preparar 2 recordatorios</span><span class="btn btn-sm">Abrir en Facturas</span></div></div>
+        <div class="msg u">¿Y cómo va el año?</div>
+        <div class="msg a" style="max-width:100%">${aiTag()}<div>Llevas <b>499.000 €</b> vendidos de enero a octubre. Octubre es el mejor mes del año.</div>${lineChart(640,150)}</div>
+      </div>${composer()}</div>` }),
+});
+
+// 7. Collection board
+P.push({
+  name: "Tablero de cobro",
+  desc: "Las facturas se ordenan en columnas por estado (Borrador, Pendiente, Vencida, Pagada), igual que el tablero de Oportunidades. El agente deja una nota en las tarjetas que necesitan algo.",
+  pro: "Reutiliza el tablero kanban que ya existe en el CRM. Se ve enseguida dónde está el dinero y qué hay que hacer.",
+  con: "Con muchas facturas las columnas se hacen largas. Ventas y Agente siguen necesitando sus propias vistas.",
+  html: () => { const cols = [["Borrador","var(--muted)"],["Pendiente","var(--info)"],["Vencida","var(--red)"],["Pagada","var(--green)"]];
+    const notes = { "F-2026-0149":"Coincide con la venta V-0236. Está lista para emitir.", "F-2026-0139":"Reclamar hoy. Tiene además 4.200 € sin facturar.", "F-2026-0141":"Suele pagar con unos días de retraso. Recordatorio amable." };
+    return shell({ active: "Ventas y facturación", section: oneNav, title: "Ventas y facturación", sub: "Facturas · tablero de cobro",
+    actions: `<span class="btn btn-primary">Nueva factura</span>`,
+    body: `<div class="row">${tabs(["Ventas","Facturas","Agente IA"], "Facturas")}<div class="seg"><span class="active">Tablero</span><span>Lista</span></div></div>
+      ${kpiRow()}
+      <div class="board">${cols.map(([s,c]) => { const rs = invoices.filter(r=>r.st===s); return `<div class="col"><div class="col-h"><div><i style="background:${c}"></i>${s}</div><span>${eur(rs.reduce((a,r)=>a+total(r.base),0),1)}</span></div>
+        ${rs.map(r=>`<div class="kc"><b>${r.c}</b><span>${r.n} · vence ${r.due}</span><div class="r"><strong>${eur(total(r.base),1)}</strong>${notes[r.n]?aiTag("IA"):""}</div>${notes[r.n]?`<div class="hint">${notes[r.n]}</div>`:""}</div>`).join("")}</div>`; }).join("")}</div>` }); },
+});
+
+// 8. Agent report feed
+P.push({
+  name: "Informe del agente",
+  desc: "La vista Agente IA es una línea de tiempo: cada mañana el agente revisa ventas y facturas y deja lo que ha encontrado, con botones para actuar. A la derecha, el estado general.",
+  pro: "Deja claro qué hace el agente y cuándo, y queda un historial de sus análisis. Fácil de explicar en la memoria del proyecto.",
+  con: "Es menos interactivo que un chat. Hay que guardar los análisis en una tabla nueva de Supabase.",
+  html: () => shell({ active: "Ventas y facturación", section: oneNav, title: "Ventas y facturación", sub: "Agente IA · informe diario",
+    actions: `<span class="btn">Configurar avisos</span><span class="btn btn-primary">Analizar ahora</span>`,
+    body: `<div class="row">${tabs(["Ventas","Facturas","Agente IA"], "Agente IA")}<div class="seg"><span class="active">Esta semana</span><span>Mes</span><span>Trimestre</span></div></div>
+      <div class="grid2" style="grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)"><div class="feed">
+        ${[["Hoy 09:12", findings[0]],["Hoy 09:12", findings[1]],["Lun 26/10", findings[2]],["Vie 23/10", findings[3]]].map(([t,f],i,a)=>`<div class="fi"><time>${t}</time><div class="rail"><i style="background:${f.c}"></i>${i<a.length-1?"<u></u>":""}</div><div class="body"><div class="card"><h5>${f.t}</h5><p>${f.s}</p><div class="acts" style="display:flex;gap:6px;margin-top:10px">${f.a.map((x,j)=>`<span class="btn btn-sm ${j===0?"btn-primary":""}">${x}</span>`).join("")}</div></div></div></div>`).join("")}
+      </div><div style="display:flex;flex-direction:column;gap:12px">
+        <div class="card"><div class="card-h"><h4>Cobrado este trimestre</h4><span>objetivo 140.000 €</span></div><strong style="font-size:23px;letter-spacing:-.03em">118.560 €</strong><div class="prog" style="margin-top:8px"><i style="width:85%"></i></div><small style="color:var(--muted);font-size:11.5px;margin-top:6px">85 % del objetivo</small></div>
+        <div class="card"><div class="card-h"><h4>Clientes que pagan tarde</h4><span>media de días</span></div>
+          <table><tbody><tr><td>Iberfrío SA</td><td class="num">17 días</td></tr><tr><td>Clínica Vega</td><td class="num">6 días</td></tr><tr><td>Talleres Mendoza</td><td class="num">2 días</td></tr></tbody></table></div>
+        <div class="card"><div class="card-h"><h4>Pregunta algo concreto</h4></div>${composer("Escribe tu pregunta…")}</div>
+      </div></div>` }),
+});
+
+// Picker
+let cur = 0;
+const picker = document.getElementById("picker");
+picker.innerHTML = P.map((p, i) => `<button class="chip" type="button" data-i="${i}"><span class="n">${i + 1}</span>${p.name}</button>`).join("");
+function show(i) {
+  cur = (i + P.length) % P.length;
+  const p = P[cur];
+  document.getElementById("p-title").textContent = `${cur + 1}. ${p.name}`;
+  document.getElementById("p-desc").textContent = p.desc;
+  document.getElementById("p-pro").textContent = p.pro;
+  document.getElementById("p-con").textContent = p.con;
+  document.getElementById("frame").innerHTML = p.html();
+  picker.querySelectorAll(".chip").forEach((b, j) => { b.classList.toggle("active", j === cur); b.setAttribute("aria-pressed", j === cur); });
+  try { history.replaceState(null, "", "#p" + (cur + 1)); } catch (_) {}
+}
+picker.addEventListener("click", (e) => { const b = e.target.closest("[data-i]"); if (b) show(+b.dataset.i); });
+document.getElementById("prev").onclick = () => show(cur - 1);
+document.getElementById("next").onclick = () => show(cur + 1);
+const m = /^#p(\d)$/.exec(location.hash);
+show(m ? +m[1] - 1 : 0);
+</script>

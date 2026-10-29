@@ -1188,6 +1188,29 @@ h3 {
   width: 100%;
 }
 
+.crm-kpi-grid-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.crm-table .crm-table-num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.crm-table-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.crm-table tbody tr.is-selected {
+  background: var(--row-hover);
+}
+
+.crm-table tbody tr.is-selected td:first-child {
+  box-shadow: inset 3px 0 0 var(--beavr-blue);
+}
+
 .crm-kpi {
   background: var(--beavr-surface);
   border: 1px solid var(--beavr-line);
@@ -2361,6 +2384,144 @@ h3 {
   font-weight: 600;
 }
 
+/* Factura desde foto: client radio group, client row with "Cambiar" and photo thumbnail. */
+.invoice-photo-fieldset {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.invoice-photo-fieldset legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--beavr-blue-deep);
+}
+
+.invoice-photo-client {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.invoice-photo-client input {
+  flex: 1;
+  min-width: 0;
+}
+
+.invoice-photo-thumb {
+  align-self: flex-start;
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border: 1px solid var(--beavr-line);
+  border-radius: 8px;
+  background: var(--beavr-mist);
+}
+
+/* Agente IA tab: centred conversation, suggestions, proposal cards and composer. */
+.agent-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.agent-panel h2 {
+  font-size: 22px;
+  font-weight: 700;
+  text-align: center;
+  color: var(--beavr-blue-deep);
+}
+
+.agent-suggestions {
+  justify-content: center;
+}
+
+.agent-suggestions .filter-chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.agent-messages {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.agent-message {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--beavr-line);
+  border-radius: 12px;
+  background: var(--beavr-surface);
+  color: var(--beavr-fg);
+  font-size: 14px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.agent-message ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.agent-message-user {
+  align-self: flex-end;
+  max-width: 85%;
+  border-color: var(--beavr-blue-deep);
+  background: var(--beavr-blue-deep);
+  color: var(--beavr-inverse);
+}
+
+.agent-message-error {
+  border-color: var(--danger-border);
+  background: var(--danger-bg);
+  color: var(--danger-fg);
+  font-weight: 600;
+}
+
+.agent-proposal {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--beavr-mist);
+  font-weight: 600;
+}
+
+.agent-proposal-result {
+  color: var(--beavr-muted);
+}
+
+.agent-thinking {
+  color: var(--beavr-muted);
+  font-size: 13px;
+}
+
+.agent-composer {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.agent-composer .form-field {
+  flex: 1;
+  min-width: 0;
+}
+
 .form-dates {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2658,7 +2819,8 @@ h3 {
 
   .summary-grid,
   .stats-grid,
-  .crm-kpi-grid {
+  .crm-kpi-grid,
+  .crm-kpi-grid-3 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 

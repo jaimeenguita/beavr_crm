@@ -12,12 +12,15 @@ import { ProcessStrip } from "@/components/ProcessStrip";
 import { FichajesPanel, type FichajeRow } from "@/components/rrhh/FichajesPanel";
 import { RrhhPanel } from "@/components/rrhh/RrhhPanel";
 import { VacacionesPanel, type VacacionRow } from "@/components/rrhh/VacacionesPanel";
+import { VentasModule } from "@/components/ventas/VentasModule";
 import { uploadCompanyLogo } from "@/lib/crm/companyLogo";
+import { invoiceBlockMessage, mapFacturaRow, type Invoice } from "@/lib/crm/facturas";
 import {
   mapCompanyRow,
   mapExternalContacts,
   mapInternalStaff,
   mapOpportunityRow,
+  opportunityLookups,
   type MappedOpportunity,
 } from "@/lib/crm/mapRows";
 import { formatPrice } from "@/lib/crm/money";
@@ -72,6 +75,7 @@ type HomeView =
   | "opportunities"
   | "people"
   | "companies"
+  | "sales"
   | "rrhh"
   | "rrhh_admisiones"
   | "rrhh_fichajes"
@@ -87,6 +91,8 @@ function resolveView(vista: string | null): HomeView {
     case "empresas":
     case "clientes":
       return "companies";
+    case "ventas":
+      return "sales";
     case "rrhh":
     case "plantilla":
       return "rrhh";
@@ -161,6 +167,7 @@ function HomeContent() {
   const [admisionRecords, setAdmisionRecords] = useState<Admision[]>([]);
   const [fichajeRecords, setFichajeRecords] = useState<FichajeRow[]>([]);
   const [vacacionRecords, setVacacionRecords] = useState<VacacionRow[]>([]);
+  const [invoiceRecords, setInvoiceRecords] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -184,6 +191,7 @@ function HomeContent() {
       admisionesResult,
       fichajesResult,
       vacacionesResult,
+      facturasResult,
     ] = await Promise.all([
       supabase.from("empresas").select("*").order("created_at", { ascending: true }),
       supabase.from("personas").select("*").order("created_at", { ascending: true }),
@@ -191,6 +199,7 @@ function HomeContent() {
       supabase.from("rrhh_admisiones").select("*").order("created_at", { ascending: false }),
       supabase.from("rrhh_fichajes").select("*").order("entrada_en", { ascending: false }),
       supabase.from("rrhh_vacaciones").select("*").order("fecha_inicio", { ascending: false }),
+      supabase.from("facturas").select("*").order("fecha_emision", { ascending: false }),
     ]);
 
     if (opportunitiesResult.error) {
@@ -201,28 +210,14 @@ function HomeContent() {
       setAdmisionRecords([]);
       setFichajeRecords([]);
       setVacacionRecords([]);
+      setInvoiceRecords([]);
       if (!silent) setLoading(false);
       return;
     }
 
     const companies = (companiesResult.data ?? []) as Record<string, unknown>[];
     const people = (peopleResult.data ?? []) as Record<string, unknown>[];
-    const companyById = new Map(
-      companies.map((company) => [String(company.id), String(company.nombre ?? "Sin nombre")]),
-    );
-    const personById = new Map(
-      people.map((person) => {
-        const empresaId = typeof person.empresa_id === "string" ? person.empresa_id : null;
-        return [
-          String(person.id),
-          {
-            nombre: String(person.nombre ?? "Sin nombre"),
-            email: String(person.email ?? "Sin email"),
-            empresa: (empresaId && companyById.get(empresaId)) || "Sin empresa",
-          },
-        ];
-      }),
-    );
+    const { companyById, personById } = opportunityLookups(companies, people);
     const staffNameById = new Map(
       people
         .filter((person) => Boolean(person.es_interno))
@@ -260,6 +255,9 @@ function HomeContent() {
         };
       }),
     );
+    setInvoiceRecords(
+      ((facturasResult.data ?? []) as Record<string, unknown>[]).map(mapFacturaRow),
+    );
     setOpportunities(
       ((opportunitiesResult.data ?? []) as Record<string, unknown>[]).map((row) =>
         mapOpportunityRow(row, personById, companyById),
@@ -284,6 +282,9 @@ function HomeContent() {
           fetchData({ silent: true });
         },
       )
+      .on("postgres_changes", { event: "*", schema: "public", table: "facturas" }, () => {
+        fetchData({ silent: true });
+      })
       .subscribe();
 
     return () => {
@@ -484,6 +485,10 @@ function HomeContent() {
     if (error) {
       skipRealtimeRefresh.current = Math.max(0, skipRealtimeRefresh.current - 1);
       setOpportunities(previous);
+      setNotice({
+        type: "error",
+        text: invoiceBlockMessage(error) ?? "No se ha podido mover la oportunidad. Inténtalo de nuevo.",
+      });
     }
   };
 
@@ -492,6 +497,7 @@ function HomeContent() {
     opportunities: { title: "Oportunidades", subtitle: "Pipeline comercial · del lead a la venta" },
     people: { title: "Contactos", subtitle: "Personas de contacto en clientes" },
     companies: { title: "Clientes", subtitle: "Empresas y cuentas de la cartera" },
+    sales: { title: "Ventas y facturación", subtitle: "Ventas ganadas y facturas a clientes" },
     rrhh: { title: "Plantilla", subtitle: "Equipo interno · fichas RRHH" },
     rrhh_admisiones: { title: "Admisiones", subtitle: "Procesos de selección y contratación" },
     rrhh_fichajes: { title: "Fichajes", subtitle: "Entradas y salidas del equipo · filtrable" },
@@ -527,6 +533,7 @@ function HomeContent() {
       {activeView === "opportunities" && (
         <>
           <ProcessStrip activeId="oportunidad" />
+          {noticeBanner}
 
           <section className="stats-grid" aria-label="Estadísticas principales">
             <article className="stat-card">
@@ -623,6 +630,20 @@ function HomeContent() {
               </div>
             ))}
           </section>
+        </>
+      )}
+
+      {activeView === "sales" && (
+        <>
+          {noticeBanner}
+          <VentasModule
+            opportunities={opportunities}
+            invoices={invoiceRecords}
+            companies={empresaRecords}
+            loading={loading}
+            onChanged={() => fetchData({ silent: true })}
+            onNotice={setNotice}
+          />
         </>
       )}
 

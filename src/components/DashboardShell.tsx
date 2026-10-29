@@ -12,6 +12,7 @@ export type NavKey =
   | "opportunities"
   | "people"
   | "companies"
+  | "sales"
   | "rrhh"
   | "rrhh_admisiones"
   | "rrhh_fichajes"
@@ -83,6 +84,20 @@ const CRM_NAV: NavItem[] = [
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <rect x="4" y="5" width="6" height="14" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
         <rect x="14" y="5" width="6" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.7" />
+      </svg>
+    ),
+  },
+];
+
+const SALES_NAV: NavItem[] = [
+  {
+    key: "sales",
+    label: "Ventas y facturación",
+    href: "/?vista=ventas",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 17l5-5 4 3 7-8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M15 7h5v5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     ),
   },
@@ -164,6 +179,8 @@ function resolveActive(pathname: string, vista: string | null): NavKey {
     case "empresas":
     case "clientes":
       return "companies";
+    case "ventas":
+      return "sales";
     case "rrhh":
     case "plantilla":
       return "rrhh";
@@ -379,12 +396,13 @@ function DashboardShellInner({
         </div>
 
         <NavSection label="CRM" items={CRM_NAV} active={active} counts={counts} />
+        <NavSection label="Ventas" items={SALES_NAV} active={active} counts={counts} />
         <NavSection label="RRHH" items={RRHH_NAV} active={active} counts={counts} />
 
         <div className="sidebar-foot">
           <div className="sidebar-foot-copy">
             <div>beavr ERP</div>
-            <div>CRM · RRHH</div>
+            <div>CRM · Ventas · RRHH</div>
           </div>
         </div>
       </aside>

@@ -14,6 +14,7 @@ import { DashboardShell } from "@/components/DashboardShell";
 import { EntityLogo } from "@/components/EntityLogo";
 import { EmployeeEditor, type Employee, type EmployeeFormValues } from "@/components/EmployeeDialogs";
 import { deleteCompanyLogo, uploadCompanyLogo } from "@/lib/crm/companyLogo";
+import { invoiceErrorMessage } from "@/lib/crm/facturas";
 import { formatPrice } from "@/lib/crm/money";
 import { STAGE_COLORS, STAGE_LABELS, normalizeStage, websiteHref, type Stage } from "@/lib/crm/stages";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
@@ -211,7 +212,10 @@ export default function CompanyDetailPage() {
     setSaving(false);
 
     if (error) {
-      setNotice({ type: "error", text: "No se ha podido eliminar la empresa. Inténtalo de nuevo." });
+      setNotice({
+        type: "error",
+        text: invoiceErrorMessage(error) ?? "No se ha podido eliminar la empresa. Inténtalo de nuevo.",
+      });
       return;
     }
 

@@ -9,7 +9,7 @@ function str(value: unknown, fallback = ""): string {
   return typeof value === "string" && value.trim() ? value : fallback;
 }
 
-function strOrNull(value: unknown): string | null {
+export function strOrNull(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value : null;
 }
 
@@ -63,7 +63,29 @@ export type MappedOpportunity = {
   precio: number | null;
   estado: Stage;
   creado_en: string;
+  ganada_en: string | null;
 };
+
+// Company names and person summaries by id, which mapOpportunityRow uses to resolve linked records.
+export function opportunityLookups(companies: Row[], people: Row[]) {
+  const companyById = new Map(
+    companies.map((company) => [String(company.id), String(company.nombre ?? "Sin nombre")]),
+  );
+  const personById = new Map(
+    people.map((person) => {
+      const empresaId = typeof person.empresa_id === "string" ? person.empresa_id : null;
+      return [
+        String(person.id),
+        {
+          nombre: String(person.nombre ?? "Sin nombre"),
+          email: String(person.email ?? "Sin email"),
+          empresa: (empresaId && companyById.get(empresaId)) || "Sin empresa",
+        },
+      ];
+    }),
+  );
+  return { companyById, personById };
+}
 
 export function mapOpportunityRow(
   row: Row,
@@ -89,5 +111,6 @@ export function mapOpportunityRow(
     precio: row.precio != null ? Number(row.precio) : null,
     estado: normalizeStage(typeof row.estado === "string" ? row.estado : null),
     creado_en: str(row.creado_en, new Date().toISOString()),
+    ganada_en: strOrNull(row.ganada_en),
   };
 }
