@@ -559,7 +559,7 @@ h3 {
 .crm-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: 10px;
   margin-bottom: 14px;
@@ -569,7 +569,7 @@ h3 {
 .crm-toolbar-actions {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-end;
   gap: 8px;
 }
 
@@ -955,6 +955,9 @@ h3 {
 }
 
 .filter-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid var(--beavr-line);
   background: var(--beavr-surface);
   color: var(--beavr-muted);
@@ -963,6 +966,8 @@ h3 {
   min-height: 44px;
   font-size: 12px;
   font-weight: 550;
+  line-height: 1.2;
+  text-decoration: none;
   cursor: pointer;
   transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
@@ -1184,7 +1189,7 @@ h3 {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 10px;
-  align-items: start;
+  align-items: stretch;
   width: 100%;
 }
 
@@ -1220,7 +1225,7 @@ h3 {
   flex-direction: column;
   gap: 4px;
   min-height: 0;
-  height: auto;
+  height: 100%;
 }
 
 .crm-kpi strong {
@@ -1241,6 +1246,7 @@ h3 {
 }
 
 .crm-kpi small {
+  margin-top: auto;
   color: var(--beavr-muted);
   font-size: 12px;
 }
@@ -1775,9 +1781,15 @@ h3 {
 }
 
 .btn-compact {
-  padding: 5px 8px;
+  padding: 4px 10px;
   min-width: 32px;
+  min-height: 32px;
+  height: auto;
   border-radius: 8px;
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 .btn-compact svg {
@@ -3168,11 +3180,19 @@ h3 {
   border-color: rgba(147, 197, 253, 0.28);
 }
 
-/* RRHH */
+/* RRHH / Ventas section tabs */
 .rrhh-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.rrhh-tabs .filter-chip {
+  padding: 6px 12px;
+  min-height: 32px;
+  font-size: 12px;
 }
 
 .rrhh-filters {

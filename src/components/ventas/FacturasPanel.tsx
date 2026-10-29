@@ -354,7 +354,7 @@ export function FacturasPanel({
                               onClick={() => void markPaid(invoice)}
                               aria-label={`Marcar como pagada ${name}`}
                             >
-                              Marcar como pagada
+                              Pagada
                             </button>
                             <button
                               type="button"
