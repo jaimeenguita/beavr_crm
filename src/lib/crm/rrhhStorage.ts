@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export const RRHH_BUCKET = "rrhh-archivos";
 export const RRHH_MAX_BYTES = 10 * 1024 * 1024;
 
-const IMAGE_EXTENSIONS: Record<string, string> = {
+export const IMAGE_EXTENSIONS: Record<string, string> = {
   "image/png": "png",
   "image/jpeg": "jpg",
   "image/webp": "webp",

@@ -12,6 +12,7 @@ import {
   type OpportunityFormValues,
   type OpportunityRecord,
 } from "@/components/OpportunityDialogs";
+import { invoiceBlockMessage } from "@/lib/crm/facturas";
 import { formatDate } from "@/lib/crm/format";
 import { formatPrice, parsePriceInput } from "@/lib/crm/money";
 import { STAGE_COLORS, STAGE_LABELS, STAGE_ORDER, normalizeStage, type Stage } from "@/lib/crm/stages";
@@ -127,7 +128,7 @@ export default function OpportunityDetailPage() {
     setSaving(false);
 
     if (error) {
-      setNotice({ type: "error", text: "No se ha podido cambiar el estado. Inténtalo de nuevo." });
+      setNotice({ type: "error", text: invoiceBlockMessage(error) ?? "No se ha podido cambiar el estado. Inténtalo de nuevo." });
       return;
     }
 
@@ -155,7 +156,7 @@ export default function OpportunityDetailPage() {
     setSaving(false);
 
     if (error) {
-      setNotice({ type: "error", text: "No se han podido guardar los cambios. Inténtalo de nuevo." });
+      setNotice({ type: "error", text: invoiceBlockMessage(error) ?? "No se han podido guardar los cambios. Inténtalo de nuevo." });
       return;
     }
 
@@ -171,7 +172,7 @@ export default function OpportunityDetailPage() {
     setSaving(false);
 
     if (error) {
-      setNotice({ type: "error", text: "No se ha podido eliminar la oportunidad. Inténtalo de nuevo." });
+      setNotice({ type: "error", text: invoiceBlockMessage(error) ?? "No se ha podido eliminar la oportunidad. Inténtalo de nuevo." });
       setDeleteOpen(false);
       return;
     }

@@ -415,6 +415,7 @@ export function DeleteConfirmDialog({
   heading,
   detail,
   confirmLabel,
+  busyLabel = "Eliminando...",
   deleting,
   onConfirm,
   onClose,
@@ -424,6 +425,7 @@ export function DeleteConfirmDialog({
   heading: string;
   detail?: string;
   confirmLabel: string;
+  busyLabel?: string;
   deleting: boolean;
   onConfirm: () => void;
   onClose: () => void;
@@ -449,7 +451,7 @@ export function DeleteConfirmDialog({
           Cancelar
         </button>
         <button type="button" className="btn btn-danger" onClick={onConfirm} disabled={deleting}>
-          {deleting ? "Eliminando..." : confirmLabel}
+          {deleting ? busyLabel : confirmLabel}
         </button>
       </div>
     </Modal>

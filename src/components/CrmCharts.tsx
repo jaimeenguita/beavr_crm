@@ -13,6 +13,7 @@ import {
 } from "chart.js";
 import { Bar, Doughnut } from "react-chartjs-2";
 import { useTheme } from "@/components/ThemeProvider";
+import { formatPrice } from "@/lib/crm/money";
 import { STAGE_COLORS, STAGE_LABELS, STAGE_ORDER, type Stage } from "@/lib/crm/stages";
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Legend);
@@ -369,6 +370,65 @@ export function CrmOutcomeChart({
         <span>
           <strong style={{ color: STAGE_COLORS.lost.bar }}>{perdidas}</strong> perdidas
         </span>
+      </div>
+    </div>
+  );
+}
+
+export function SalesVsInvoicedChart({
+  labels,
+  sold,
+  invoiced,
+}: {
+  labels: string[];
+  sold: number[];
+  invoiced: number[];
+}) {
+  const palette = useChartPalette();
+
+  const data = {
+    labels,
+    datasets: [
+      { label: "Vendido", data: sold, backgroundColor: palette.text, borderRadius: 4, maxBarThickness: 18 },
+      { label: "Facturado", data: invoiced, backgroundColor: palette.muted, borderRadius: 4, maxBarThickness: 18 },
+    ],
+  };
+
+  const options: ChartOptions<"bar"> = {
+    responsive: true,
+    maintainAspectRatio: false,
+    animation: { duration: CHART_ANIMATION.duration, easing: CHART_ANIMATION.easing },
+    plugins: {
+      legend: {
+        position: "bottom",
+        labels: { color: palette.muted, boxWidth: 10, boxHeight: 10, font: { size: 11 } },
+      },
+      tooltip: {
+        ...tooltipDefaults(palette),
+        callbacks: {
+          label: (ctx) => ` ${ctx.dataset.label}: ${formatPrice(ctx.parsed.y) ?? "0 €"}`,
+        },
+      },
+    },
+    scales: {
+      x: {
+        ticks: { color: palette.muted, font: { size: 11 }, maxRotation: 0 },
+        grid: { display: false },
+        border: { color: palette.grid },
+      },
+      y: {
+        beginAtZero: true,
+        ticks: { color: palette.muted, font: { size: 11 }, precision: 0, callback: (value) => formatPrice(Number(value)) ?? "" },
+        grid: { color: palette.grid },
+        border: { display: false },
+      },
+    },
+  };
+
+  return (
+    <div className="crm-chart-bars">
+      <div className="crm-chart-canvas" role="img" aria-label="Importe vendido y facturado por mes">
+        <Bar data={data} options={options} />
       </div>
     </div>
   );
