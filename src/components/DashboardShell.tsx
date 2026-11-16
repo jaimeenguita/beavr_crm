@@ -13,6 +13,7 @@ export type NavKey =
   | "people"
   | "companies"
   | "sales"
+  | "web"
   | "rrhh"
   | "rrhh_admisiones"
   | "rrhh_fichajes"
@@ -103,6 +104,26 @@ const SALES_NAV: NavItem[] = [
   },
 ];
 
+const WEB_NAV: NavItem[] = [
+  {
+    key: "web",
+    label: "Sitios",
+    href: "/?vista=web",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.7" />
+        <path d="M4.5 12h15" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+        <path
+          d="M12 4c2.2 2.4 3.3 5 3.3 8s-1.1 5.6-3.3 8c-2.2-2.4-3.3-5-3.3-8s1.1-5.6 3.3-8Z"
+          stroke="currentColor"
+          strokeWidth="1.7"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+];
+
 const RRHH_NAV: NavItem[] = [
   {
     key: "rrhh",
@@ -169,6 +190,7 @@ function resolveActive(pathname: string, vista: string | null): NavKey {
   if (pathname.startsWith("/empleados")) return "people";
   if (pathname.startsWith("/rrhh")) return "rrhh";
   if (pathname.startsWith("/oportunidades")) return "opportunities";
+  if (pathname.startsWith("/sitio")) return "web";
 
   switch (vista) {
     case "oportunidades":
@@ -181,6 +203,8 @@ function resolveActive(pathname: string, vista: string | null): NavKey {
       return "companies";
     case "ventas":
       return "sales";
+    case "web":
+      return "web";
     case "rrhh":
     case "plantilla":
       return "rrhh";
@@ -397,12 +421,13 @@ function DashboardShellInner({
 
         <NavSection label="CRM" items={CRM_NAV} active={active} counts={counts} />
         <NavSection label="Ventas" items={SALES_NAV} active={active} counts={counts} />
+        <NavSection label="Web" items={WEB_NAV} active={active} counts={counts} />
         <NavSection label="RRHH" items={RRHH_NAV} active={active} counts={counts} />
 
         <div className="sidebar-foot">
           <div className="sidebar-foot-copy">
             <div>beavr ERP</div>
-            <div>CRM · Ventas · RRHH</div>
+            <div>CRM · Ventas · Web · RRHH</div>
           </div>
         </div>
       </aside>

@@ -13,6 +13,7 @@ import { FichajesPanel, type FichajeRow } from "@/components/rrhh/FichajesPanel"
 import { RrhhPanel } from "@/components/rrhh/RrhhPanel";
 import { VacacionesPanel, type VacacionRow } from "@/components/rrhh/VacacionesPanel";
 import { VentasModule } from "@/components/ventas/VentasModule";
+import { WebModule } from "@/components/web/WebModule";
 import { uploadCompanyLogo } from "@/lib/crm/companyLogo";
 import { invoiceBlockMessage, mapFacturaRow, type Invoice } from "@/lib/crm/facturas";
 import {
@@ -76,6 +77,7 @@ type HomeView =
   | "people"
   | "companies"
   | "sales"
+  | "web"
   | "rrhh"
   | "rrhh_admisiones"
   | "rrhh_fichajes"
@@ -93,6 +95,8 @@ function resolveView(vista: string | null): HomeView {
       return "companies";
     case "ventas":
       return "sales";
+    case "web":
+      return "web";
     case "rrhh":
     case "plantilla":
       return "rrhh";
@@ -498,6 +502,7 @@ function HomeContent() {
     people: { title: "Contactos", subtitle: "Personas de contacto en clientes" },
     companies: { title: "Clientes", subtitle: "Empresas y cuentas de la cartera" },
     sales: { title: "Ventas y facturación", subtitle: "Ventas ganadas y facturas a clientes" },
+    web: { title: "Web", subtitle: "Sitios de clientes · plantillas fijas, contenidos editables" },
     rrhh: { title: "Plantilla", subtitle: "Equipo interno · fichas RRHH" },
     rrhh_admisiones: { title: "Admisiones", subtitle: "Procesos de selección y contratación" },
     rrhh_fichajes: { title: "Fichajes", subtitle: "Entradas y salidas del equipo · filtrable" },
@@ -644,6 +649,13 @@ function HomeContent() {
             onChanged={() => fetchData({ silent: true })}
             onNotice={setNotice}
           />
+        </>
+      )}
+
+      {activeView === "web" && (
+        <>
+          {noticeBanner}
+          <WebModule companies={empresaRecords} loading={loading} onNotice={setNotice} />
         </>
       )}
 

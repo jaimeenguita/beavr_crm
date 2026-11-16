@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { usePathname } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type AuthContextValue = {
@@ -84,10 +85,16 @@ export function useAuth() {
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const { user, loading, signIn } = useAuth();
+  const pathname = usePathname();
+  const isPublicSite = pathname.startsWith("/sitio/");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  if (isPublicSite) {
+    return <>{children}</>;
+  }
 
   if (loading) {
     return (

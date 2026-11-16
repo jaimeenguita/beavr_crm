@@ -6,7 +6,7 @@ Project rules for Claude / Cursor. Keep this file under ~200 lines. Update when 
 
 ## Qué es
 
-CRM **beavr** (Salesianos SGE+DDI): oportunidades, empresas, contactos/empleados, módulo RRHH (plantilla, fichajes, vacaciones, nóminas) y módulo Ventas y facturación (`/?vista=ventas`, pestañas Ventas, Facturas y Agente IA). Lo usan comerciales y personal interno. App Next.js en esta carpeta; la landing vive en `../beavr-landing`.
+CRM **beavr** (Salesianos SGE+DDI): oportunidades, empresas, contactos/empleados, módulo RRHH (plantilla, fichajes, vacaciones, nóminas), Ventas y facturación (`/?vista=ventas`) y módulo Web (`/?vista=web`: plantillas `animacion`/`moderna`; vista pública `/sitio/[slug]`). Lo usan comerciales y personal interno. App Next.js en esta carpeta; la landing vive en `../beavr-landing`.
 
 ## Datos
 
@@ -32,9 +32,9 @@ CRM **beavr** (Salesianos SGE+DDI): oportunidades, empresas, contactos/empleados
 ## Mapa
 
 ```
-src/app/           # rutas: /, empresas, empleados, oportunidades, rrhh, api/leads, api/agente (chat, factura-foto)
-src/components/    # UI CRM + rrhh/ + ventas/ (Ventas y facturación) + FormField, Modal, DashboardShell
-src/lib/crm/       # dominio y formato (incl. facturas.ts)
+src/app/           # rutas: /, empresas, empleados, oportunidades, rrhh, sitio/[slug], api/leads, api/agente
+src/components/    # UI CRM + rrhh/ + ventas/ + web/ (sitios) + FormField, Modal, DashboardShell
+src/lib/crm/       # dominio y formato (incl. facturas.ts, sitios.ts)
 src/lib/agente/    # agente IA: modelo y auth (server.ts), herramientas (tools.ts), vista del chat (chat.ts)
 src/lib/supabase/  # clientes Supabase
 supabase/          # SQL / migraciones del proyecto
@@ -64,9 +64,36 @@ No hay script `typecheck` en `package.json`; para comprobar tipos usar `npx tsc 
 
 ## Diseño
 
-- Tokens y tipografía: `src/app/globals.css` (variables CSS del producto).
+- Tokens y tipografía: **`src/app/globals.css`** (`:root` claro + `[data-theme="dark"]`).
 - Componentes de interacción: `src/components/` (evitar cards decorativas innecesarias).
 - Tema: `ThemeProvider`.
+- Skill **ui-web** (artefacto Salesianos «20 consejos UI»): tipografía, contraste, paleta, retícula.
+- Contraste texto ≥ 4,5:1; color de marca/acción ~10 % de la UI; estados siempre con texto, no solo color.
+
+### Paleta (usar variables, no hex sueltos)
+
+Fuente de verdad: `src/app/globals.css`. Tabla al estilo del artefacto (color → código claro → uso):
+
+| Token | Claro | Uso |
+|---|---|---|
+| `--beavr-blue` / `--beavr-blue-deep` | `#111111` | Texto principal / FG |
+| `--beavr-blue-soft` | `#3f3f46` | Texto secundario suave |
+| `--beavr-muted` / `--subtle` | `#52525b` | Texto atenuado, ayudas |
+| `--beavr-surface` | `#ffffff` | Superficies, cards, paneles |
+| `--beavr-paper` | `#fafafa` | Fondo papel / capas altas |
+| `--beavr-mist` | `#f4f4f5` | Fondo de página (body) |
+| `--beavr-line` | `#e4e4e7` | Bordes, divisores |
+| `--beavr-accent` | `#111111` | Acciones primarias, foco (solo lo pulsable) |
+| `--beavr-accent-hover` | `#27272a` | Hover de acción primaria |
+| `--beavr-inverse` | `#ffffff` | Texto sobre accent / sidebar activa |
+| `--sidebar-bg` | `#111111` | Fondo menú lateral |
+| `--sidebar-fg` | `#fafafa` | Texto menú lateral |
+| `--success-fg` (+ bg/border) | `#166534` | Éxito (siempre con texto/icono) |
+| `--danger-fg` / `--danger-solid` | `#991b1b` / `#b91c1c` | Error / destructivo |
+| `--focus-ring` | `#111111` | Anillo de foco teclado |
+
+Modo oscuro: mismos nombres de token; valores en `[data-theme="dark"]` (fondos ~`#161616`/`#1a1a1a`, no blanco/negro puros en todas las capas).  
+Estados semánticos del artefacto: hay **éxito** y **error**; si hace falta aviso/info, añadir tokens (`--warning-*`, `--info-*`) en `globals.css` y reutilizarlos — no inventar hex en componentes.
 
 ## Entorno
 
@@ -96,5 +123,7 @@ Copiar/ajustar en `.env.local` (gitignored).
 ## Skills Cursor (este equipo)
 
 - `erp` → `~/.cursor/skills/erp/` (jerarquía + UX FormField)
+- `ui-web` → `~/.cursor/skills/ui-web/` (tipografía, **paleta**, spacing, carga)
 - `pautasWCAG` → `~/.cursor/skills/pautasWCAG/`
+- `design-review` → `~/.cursor/skills/design-review/`
 - `metodo-trabajo` → `~/.cursor/skills/metodo-trabajo/` (reparto principal/subagentes)

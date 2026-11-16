@@ -535,19 +535,23 @@ export function RrhhPanel({
                           <div className="rrhh-row-actions">
                             {item.estado === "en_proceso" ? (
                               <>
-                                <button type="button" className="btn btn-soft" onClick={() => setHireTarget(item)}>
+                                <button
+                                  type="button"
+                                  className="btn btn-compact btn-soft"
+                                  onClick={() => setHireTarget(item)}
+                                >
                                   Contratar
                                 </button>
                                 <button
                                   type="button"
-                                  className="btn btn-danger-soft"
+                                  className="btn btn-compact btn-danger-soft"
                                   onClick={() => handleDiscard(item)}
                                 >
                                   Descartar
                                 </button>
                               </>
                             ) : item.persona_id ? (
-                              <Link href={`/rrhh/${item.persona_id}`} className="btn btn-soft">
+                              <Link href={`/rrhh/${item.persona_id}`} className="btn btn-compact btn-soft">
                                 Ver ficha
                               </Link>
                             ) : null}
